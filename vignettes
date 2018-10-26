@@ -1,0 +1,52 @@
+---
+title: "DSA - Seasonal Adjustment of Daily Time Series"
+author: "Daniel Ollech"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+## Daily Seasonal Adjustment
+The dsa package includes functions to seasonally adjust time series with daily observations. Daily time series can contain three different seasonalities. Exemplarily, the currency in circulation is influenced by a weekday effect as the demand for banknotes increases towards the weekend.  Monthly recurring troughs and peaks can often be observed, because salary payments tend to be concentrated around the turn of the month. Due to an increase in consumption the demand for currency reaches its high around Christmas time. In addition to these seasonal influences, the currency in circulation is positively impacted by Easter and other public holidays whose date changes from year to year. The procedure for daily calendar and seasonal adjustment (DSA) made available here combines a local regression based iterative seasonal adjustment routine with a time series regression model for the estimation of moving holiday and outlier effects.
+Details on the procedure can be found in Ollech (2018).
+
+
+## To get started
+
+We'll simulated some seasonal daily data using the **daily_sim()** function and afterwards seasonally adjust that series using the **dsa()** function.
+```{r}
+set.seed(5)
+x = daily_sim(5)$original
+res <- dsa(x, cval=7, model=c(3,1,0),fourier_number = 13, reg.create=NULL) 
+```
+
+To output the results, it is possible to create an HTML file that contains the most important results and visualisations.
+
+```{r}
+output(res)
+```
+
+
+## Figures
+
+It is also possible, to work with the data directly and to use **xtsplot()** to plot the results.
+
+```{r, fig.show='hold'}
+sa <- res$output[,1]
+original <- res$output[,2]
+xtsplot(merge(original, sa), names=c("Original time series", "Calendar and Seasonally Adjusted"), main="Results of Daily Seasonal Adjustment")
+```
+
+## References
+Ollech, Daniel (2018). Seasonal adjustment of daily time series. Bundesbank Discussion Paper 41/2018.
+
