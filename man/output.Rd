@@ -38,7 +38,7 @@ This function creates HTML output in a specified folder for objects of class dai
 This function can be used to create plots and tables necessary for the analysis of seasonally and calendar adjusted daily time series. Uses the output of dsa() as an input.
 }
 \examples{
-res <- dsa(daily_sim(5)$original, cval=7, model=c(3,1,0),fourier_number = 13, reg.create=NULL)
+res <- dsa(daily_sim(4)$original, cval=7, model=c(3,1,0),fourier_number = 13, reg.create=NULL)
 \dontrun{output(res)}
 }
 \author{

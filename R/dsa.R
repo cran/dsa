@@ -30,24 +30,28 @@
 #' @param inner3 Number of iterations of inner loop in STL for day of the year effect
 #' @param reiterate3 Number of total iterations of STL for the day of the year effect
 #' @param h Forecast horizon in number of days
+#' @param scaler for additive model, if max(abs(series)) > 1e5, scale series 
 #' @param progressBar Should a progress bar be displayed?
 #' @author Daniel Ollech
 #' @references Ollech, Daniel (2018). Seasonal adjustment of daily time series. Bundesbank Discussion Paper 41/2018.
-#' @examples x = daily_sim(5)$original
+#' @examples x = daily_sim(n=4)$original # series with length 4 years
 #' res <- dsa(x, cval=7, model=c(3,1,0),fourier_number = 13, reg.create=NULL) 
 #' @details This function can be used to seasonally and calendar adjust daily time series using multiplicative model.
 #' @export
 
-dsa <- function(series, span.start=NA, model=NULL, Log=FALSE, Diff=0, automodel="reduced", ic="bic", fourier_number=NA, s.window1=151, s.window2=51, s.window3=15, t.window1=NULL, t.window2=NULL, t.window3=NULL,cval=7, robust1=TRUE, robust2=TRUE, robust3=TRUE, regressor=NULL, forecast_regressor=NULL, reg.create=c("Easter", "Ascension"), reg.dummy=NULL, outlier.types=c("AO", "LS", "TC"), modelspan=NULL, trend_month=3, outer3=NULL, inner3=NULL, h=365, reiterate3=NULL, progressBar=TRUE) {
+dsa <- function(series, span.start=NA, model=NULL, Log=FALSE, Diff=0, automodel="reduced", ic="bic", fourier_number=NA, s.window1=151, s.window2=51, s.window3=15, t.window1=NULL, t.window2=NULL, t.window3=NULL,cval=7, robust1=TRUE, robust2=TRUE, robust3=TRUE, regressor=NULL, forecast_regressor=NULL, reg.create=c("Easter", "Ascension"), reg.dummy=NULL, outlier.types=c("AO", "LS", "TC"), modelspan=NULL, trend_month=3, outer3=NULL, inner3=NULL, h=365, reiterate3=NULL, scaler=1e7, progressBar=TRUE) {
   
 # Preliminary checks
-  if (min(series, na.rm=TRUE)<=0) {stop("Series contains non-positive values. Only positive values allowed for multiplicative time series model.")}
+  if (min(series, na.rm=TRUE)<=0 & Log) {stop("Series contains non-positive values. Only positive values allowed for multiplicative time series model. Set Log=FALSE")}
   
   if (h >= 10 & h %%365 != 0) {warning("Forecast horizon h should be smaller than 10 or a multiple of 365. Might give problems if specification contains holiday regressors")}
   if (h < 10 & h > 0) {h <- h*365}
+  
+  if(max(abs(series), na.rm=TRUE) >1e5  & !Log) {Euro400 <- series/scaler} else {
+    Euro400 <- series
+  }
 
 # Dealing with timezone issues  
-  Euro400 <- series
   times <- as.POSIXlt(seq.Date(from=as.Date(xts::first(zoo::index(Euro400))), to=as.Date(xts::last(zoo::index(Euro400))), by="days"))
   attr(times, "tzone") <- "GMT"; attr(zoo::index(Euro400), "tzone") <-"GMT"
   times <- round(times, "days")
@@ -65,22 +69,21 @@ dsa <- function(series, span.start=NA, model=NULL, Log=FALSE, Diff=0, automodel=
   
   if (is.na(span.start)) {span.start=stats::start(Euro400)}
   
-  startingvalue <- suppressWarnings(c(as.integer(format(xts::first(zoo::index(Euro400[paste(span.start, "/", sep="")])), "%Y")), timeDate::dayOfYear(timeDate::timeDate(xts::first(zoo::index(Euro400[paste(span.start, "/", sep="")])), "%Y-%m-%d")+13e+3)))  ### Überprüfen
+  startingvalue <- suppressWarnings(c(as.integer(format(xts::first(zoo::index(Euro400[paste(span.start, "/", sep="")])), "%Y")), timeDate::dayOfYear(timeDate::timeDate(xts::first(zoo::index(Euro400[paste(span.start, "/", sep="")])), "%Y-%m-%d")+13e+3)))  
   
   if (progressBar) {utils::setTxtProgressBar(pb, 2/21, label="Estimating Day-of-the-Week")}
-  na.zero <- function(x) {zoo::na.fill(x, 0)}  # Filling up missing values with 0 
   
-
+  Euro400 <- zoo::na.locf(Euro400)
+  
   Euro400_7<- stats::ts(as.numeric(Scaler(Euro400[paste(span.start, "/", sep="")], Diff=Diff, Log=Log)), frequency=7, start=startingvalue)
 
-  stl_1  <- stats::stl(Euro400_7, s.window=s.window1, na.action = na.zero, robust=robust1, t.window=t.window1) 
+  stl_1  <- stats::stl(Euro400_7, s.window=s.window1, robust=robust1, t.window=t.window1) 
   stl1_E400 <- stl_1
   
   # Computing S1-adjusted
   v1 = stl_1$time.series[,2] + stl_1$time.series[,3]
   s1 <- Descaler(v1, Diff=Diff, y=Euro400[paste(span.start, sep="")])
   s1 <- s1 - mean(s1)+mean(Scaler(Euro400, Log=Log))  
-  
 
   #### Step 2: Adjustment of Holiday Effects and Forecasting
   # Removing Feb 29th
@@ -89,7 +92,7 @@ dsa <- function(series, span.start=NA, model=NULL, Log=FALSE, Diff=0, automodel=
   s1_xts[format(zoo::index(s1_xts), "%m-%d")=="02-29"] <- NA
   s1_ts <- stats::ts(s1_xts[!is.na(s1_xts)], start=c(as.integer(format(zoo::index(s1_xts)[1], "%Y")), as.integer(timeDate::dayOfYear(timeDate::timeDate(zoo::index(s1_xts[1]))))), freq=365)[,1]   
 
-    # Creating Holiday Regressors 
+  # Creating Holiday Regressors 
 
   if (is.null(reg.dummy)) {
     hol <- makeCal(holidays=reg.create, h=h, original=s1_xts, original2 = s1_ts)
@@ -129,6 +132,7 @@ dsa <- function(series, span.start=NA, model=NULL, Log=FALSE, Diff=0, automodel=
   if (!is.null(automodel)){
     if (progressBar) { utils::setTxtProgressBar(pb, 6/21, label="Estimating prelimary automatic ARIMA model")}
   if (substr(automodel,1,1)=="r") {
+
     s_arima365_prior <- tryCatch(forecast::auto.arima(s1_ts, stepwise=TRUE, max.d=1, seasonal=F, ic=ic, xreg=cbind(forecast::fourier(s1_ts, 24)[,c(1:10, c(23:24, 47:48))], hol$mhol, regressor)), error=function(e) e)
     if(inherits(s_arima365_prior, "error")) {s_arima365_prior$arma[1] <- 1; s_arima365_prior$arma[6] <- 1; s_arima365_prior$arma[2] <- 0 }
 
@@ -150,7 +154,7 @@ dsa <- function(series, span.start=NA, model=NULL, Log=FALSE, Diff=0, automodel=
       aicc400[fourier_number] <- 5
     }
   
-  if(length(aicc400[!is.na(aicc400)])==0) {aicc400[24] <- 4.3391883295} # Just some random number so that if the automatic detection fails, 24 fourier_terms are included, which capture annually and monthly recurring patterns.
+  if(length(aicc400[!is.na(aicc400)])==0) {aicc400[24] <- 4.3391883295} # Just some random number so that if the automatic detection fails, 24 fourier terms are included. These will then capture annually and monthly recurring patterns.
   
   # Putting things together
   s_arima365 <- forecast::Arima(s1_ts, order=c(s_arima365_prior$arma[1],s_arima365_prior$arma[6],s_arima365_prior$arma[2]), xreg=cbind(forecast::fourier(s1_ts, which.min(aicc400)), hol$mhol, regressor), method="ML")
@@ -243,7 +247,7 @@ dsa <- function(series, span.start=NA, model=NULL, Log=FALSE, Diff=0, automodel=
 
   s2 <- drop31(s2, new_start=stats::start(k1)[2], new_end=stats::end(k1)[2]) 
   s2_complete <- s2
-  s2 <- xts2ts(s2) 
+  s2 <- xts2ts(s2, freq=365) 
 
 
   
@@ -261,14 +265,16 @@ dsa <- function(series, span.start=NA, model=NULL, Log=FALSE, Diff=0, automodel=
   s2x <- Scaler(s2, Diff=Diff)
   stl_3 <- stats::stl(s2x, s.window=s.window3, robust=robust3, outer=outerval, inner=innerval, t.window=t.window3)
   s3 <- stats::ts(as.numeric(Descaler(stl_3$time.series[,2] + stl_3$time.series[,3], y=ts2xts(s1_ts), Diff=Diff)), start=startingvalue, frequency=365)
-  
-  
+
   if (!is.null(reiterate3)) {
     for (i in 1:reiterate3) {
+      s3 <- Scaler(s3, Diff=Diff) ############################
       stl_3 <- stats::stl(s3, s.window=s.window3, robust=robust3, outer=outerval, inner=innerval, t.window=t.window3)
       s3 <- stats::ts(as.numeric(Descaler(stl_3$time.series[,2] + stl_3$time.series[,3], y=ts2xts(s1_ts), Diff=Diff)), start=startingvalue, frequency=365)
     }}
   
+  
+
   s3_E400 <- s3
   stl3_E400 <- stl_3
   
@@ -277,13 +283,11 @@ dsa <- function(series, span.start=NA, model=NULL, Log=FALSE, Diff=0, automodel=
   #### Final Seasonal Series
   s_final <- s3 + c(outlier_effect, rep(xts::last(outlier_effect), times=(length(s3)- length(outlier_effect))))
   outlier_effect_xts <- ts2xts(s_final - s3)
-  
+
   times <- as.POSIXlt(seq.Date(from=as.Date(xts::first(zoo::index(Euro400))), to=as.Date(xts::last(zoo::index(Euro400)))+h, by="days"))
   attr(times, "tzone") <- "GMT"; attr(zoo::index(Euro400), "tzone") <-"GMT"
   Fill <- xts::xts(rep(NA, times=length(times)), order.by=times)
-  
   s_final_xts <- suppressWarnings(zoo::na.spline(xts::merge.xts(a=ts2xts(s_final), Fill)$a[paste(span.start, "/", sep="")]))
-
   ### Trend estimation
   # trend_month=number of months the trend should cover
   n_t = ceiling(365/(12/trend_month))
@@ -330,7 +334,8 @@ dsa <- function(series, span.start=NA, model=NULL, Log=FALSE, Diff=0, automodel=
   o_fc_xts <- fill_up(original_forecast, Scaler(Euro400, Log=Log))
 
   ## Benchmarking seasonally adjusted series
-  s_final_xts <- s_final_xts - mean(xts::first(s_final_xts, length(s_final_xts)-h), na.rm=TRUE) + mean(xts::first(o_fc_xts, length(o_fc_xts)-h), na.rm=TRUE)
+   s_final_xts <- s_final_xts - mean(xts::first(s_final_xts, length(s_final_xts)-h), na.rm=TRUE) + mean(xts::first(o_fc_xts, length(o_fc_xts)-h), na.rm=TRUE)
+  
   ## Benchmarking partially adjusted series
   s1_complete <- Descaler(s1_complete - mean(xts::first(s1_complete, length(s_final_xts)-h), na.rm=TRUE) + mean(xts::first(o_fc_xts, length(o_fc_xts)-h), na.rm=TRUE), Log=Log, y=NA)
  
@@ -380,33 +385,58 @@ dsa <- function(series, span.start=NA, model=NULL, Log=FALSE, Diff=0, automodel=
   
   if (progressBar) {utils::setTxtProgressBar(pb, 19/21, label="Creating final output")}
   # Final Output
+  
   original <- Descaler(o_fc_xts, Log=Log, y=NA); colnames(original) <- "original series"
   final_sa <- Descaler(s_final_xts, Log=Log, y=NA); colnames(final_sa) <- "final sa series"
   final_sa[format(zoo::index(sc_fac), "%m-%d")=="02-29"] <- Descaler(Scaler(original[format(zoo::index(sc_fac), "%m-%d")=="02-29"], Log=Log) - Scaler(sc_fac[format(zoo::index(sc_fac), "%m-%d")=="02-29"], Log=Log), Log=Log, y=NA) * ifelse(Log, 100, 1)
-  
-  Descaler(Scaler(s1_complete, Log=Log) - Scaler(k1_complete, Log=Log), Log=Log, y=NA) 
   
   trend <- Descaler(trend, Log=Log, y=NA); colnames(trend) <- "final trend series"
   
   fourier_terms <- which.min(aicc400)
   reg <- model_aicc_E400
   
-  sa_result <- xts::merge.xts(s1_complete, k1_complete, s2_complete, final_sa) ;  colnames(sa_result) <- c("SA1", "cal_adj", "SA2", "SA3") # Die Ergebnisse der Zwischenschritte
+  if(max(abs(series), na.rm=TRUE) >1e5  & !Log) {
+    sc_fac <- sc_fac * scaler
+    original <- original * scaler
+    final_sa <- final_sa * scaler
+    trend <- trend * scaler
+    s1_complete <- s1_complete*scaler
+    s2_complete <- s2_complete*scaler
+    k1_complete <- k1_complete*scaler
+    s1_only <- s1_only*scaler
+    s2_only <- s2_only*scaler
+    k1_only <- k1_only*scaler
+    s3_only <- s3_only*scaler
+    s1_fac <- s1_fac*scaler
+    s2_fac <- s2_fac*scaler
+    k1_fac <- k1_fac*scaler
+    s3_fac <- s3_fac*scaler
+    stl_1$time.series <- stl_1$time.series*scaler
+    stl_2$time.series <- stl_2$time.series*scaler
+    stl_3$time.series <- stl_3$time.series*scaler
+  }  
   
-  sa_result2 <- xts::merge.xts(s1_only, k1_only, s2_only, s3_only); colnames(sa_result2) <- c("onlyS1", "onlyCal", "onlyS2", "onlyS3")
-  # Graphs and Tables
+  
+  sa_result <- xts::merge.xts(s1_complete, k1_complete, s2_complete, final_sa);  colnames(sa_result) <- c("SA1", "cal_adj", "SA2", "SA3") # Die Ergebnisse der Zwischenschritte
+  
+  sa_result2 <- xts::merge.xts(s1_only, k1_only, s2_only, s3_only);  colnames(sa_result2) <- c("onlyS1", "onlyCal", "onlyS2", "onlyS3")
+
   
   x1 <- stl1_E400$time.series; x2 <- stl2_E400$time.series; x3 <- stl3_E400$time.series
   b1 <- as.numeric(xts::first(Euro400_7)); c2 <- s1_ts; 
   
   info <- c(ifelse(Log, "Log", "Level"), Diff, h)
-
-  output <- zoo::na.locf(xts::merge.xts(final_sa, original, sc_fac, trend)); names(output) <- c("seas_adj", "original", "sc_fac", "trend")
   
+ 
+ 
+  output <- zoo::na.locf(xts::merge.xts(final_sa, original, sc_fac, trend))
+  names(output) <- c("seas_adj", "original", "sc_fac", "trend")
+  
+
   finout <- list(output=output, fourier_terms=fourier_terms, reg=reg, info=info, stl=list(stl_1, stl_2, stl_3), outlier=ol, sa_result=sa_result, sa_result2=sa_result2, sfac_result=sfac_result)
   class(finout) <- "daily"
-  if (progressBar) {utils::setTxtProgressBar(pb, 21/21, label="Done")}
-  close(pb)
+  if (progressBar) {utils::setTxtProgressBar(pb, 21/21, label="Done"); close(pb)}
+  
   if(cval_new > cval & !inherits(ol, "error")) {message(paste("The critical value for outlier adjustment has automatically been set to", cval_new))}
   
   return(finout)

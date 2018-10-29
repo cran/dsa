@@ -1,3 +1,21 @@
+dsa v0.60.31 (Release date: 2018-10-29)
+==============
+
+Changes: 
+- Changes
+	- Minor changes of examples to decrease run time.
+
+
+dsa v0.60.31 (Release date: 2018-10-29)
+==============
+
+Changes: 
+- Bug fixes
+	- previously, setting option reiterate3 > 0 in the dsa function did not work together with diff > 0.
+	- if scaling the data became active in the dsa function, the data where not propably rescaled at the end.
+	- fixed display of SI ratios for annual period.
+
+
 dsa v0.60.21 (Release date: 2018-10-19)
 ==============
 

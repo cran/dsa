@@ -12,7 +12,7 @@ dsa(series, span.start = NA, model = NULL, Log = FALSE, Diff = 0,
   forecast_regressor = NULL, reg.create = c("Easter", "Ascension"),
   reg.dummy = NULL, outlier.types = c("AO", "LS", "TC"), modelspan = NULL,
   trend_month = 3, outer3 = NULL, inner3 = NULL, h = 365,
-  reiterate3 = NULL, progressBar = TRUE)
+  reiterate3 = NULL, scaler = 1e+07, progressBar = TRUE)
 }
 \arguments{
 \item{series}{Input time series}
@@ -73,6 +73,8 @@ dsa(series, span.start = NA, model = NULL, Log = FALSE, Diff = 0,
 
 \item{reiterate3}{Number of total iterations of STL for the day of the year effect}
 
+\item{scaler}{for additive model, if max(abs(series)) > 1e5, scale series}
+
 \item{progressBar}{Should a progress bar be displayed?}
 }
 \description{
@@ -82,7 +84,7 @@ Seasonally adjust daily time series using the dsa approach
 This function can be used to seasonally and calendar adjust daily time series using multiplicative model.
 }
 \examples{
-x = daily_sim(5)$original
+x = daily_sim(n=4)$original # series with length 4 years
 res <- dsa(x, cval=7, model=c(3,1,0),fourier_number = 13, reg.create=NULL) 
 }
 \references{

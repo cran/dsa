@@ -8,7 +8,7 @@
 #' @author Daniel Ollech
 #' @details This function is used internally in dsa()
 #' @examples a <- daily_sim(n=8)$original
-#' makeCal(holidays="Easter", original=a, original2=xts2ts(a, freq=365))
+#' \dontrun{makeCal(holidays="Easter", original=a, original2=xts2ts(a, freq=365))}
 #' @export
 
 makeCal <- function(holidays=NULL, h=365, original=NA, original2=NA) {

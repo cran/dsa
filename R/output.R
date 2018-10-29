@@ -14,7 +14,7 @@
 #' @param progressBar Should a progress bar be displayed?
 #' @author Daniel Ollech
 #' @details This function can be used to create plots and tables necessary for the analysis of seasonally and calendar adjusted daily time series. Uses the output of dsa() as an input.
-#' @examples res <- dsa(daily_sim(5)$original, cval=7, model=c(3,1,0),fourier_number = 13, reg.create=NULL)
+#' @examples res <- dsa(daily_sim(4)$original, cval=7, model=c(3,1,0),fourier_number = 13, reg.create=NULL)
 #' \dontrun{output(res)}
 #' @importFrom dygraphs %>%
 #' @export
@@ -520,11 +520,8 @@ if (SI) {
     annual_q <-  xts::merge.xts(annual_q, annual2[[l]])
   }
   
-  annual_p <- annual_p
-  annual_q <- annual_q 
-  
-  names(annual_p) <- as.character(1:365)
 
+  names(annual_p) <- as.character(1:365)
   names(annual_q) <- as.character(1:365)
   
   
@@ -541,7 +538,7 @@ if (SI) {
  
   annual241 <- xts::merge.xts(annual_p[,241], annual_q[,241]); names(annual241) <- c("s", "si"); fac <- ifelse(timeDate::dayOfYear(timeDate::timeDate(xts::first(zoo::index(daily.object[[1]][,1]))))>241, 365, 0); zoo::index(annual241) <- as.Date(xts::first(zoo::index(daily.object[[1]][,1])))+fac+0:(length(annual241[,1])-1)*365
  
-    annual293 <- xts::merge.xts(annual_p[,293], annual_q[,293]); names(annual293) <- c("s", "si"); fac <- ifelse(timeDate::dayOfYear(timeDate::timeDate(xts::first(zoo::index(daily.object[[1]][,1]))))>293, 365, 0); zoo::index(annual293) <- as.Date(xts::first(zoo::index(daily.object[[1]][,1])))+fac+0:(length(annual293[,1])-1)*365
+  annual293 <- xts::merge.xts(annual_p[,293], annual_q[,293]); names(annual293) <- c("s", "si"); fac <- ifelse(timeDate::dayOfYear(timeDate::timeDate(xts::first(zoo::index(daily.object[[1]][,1]))))>293, 365, 0); zoo::index(annual293) <- as.Date(xts::first(zoo::index(daily.object[[1]][,1])))+fac+0:(length(annual293[,1])-1)*365
  
   annual311 <- xts::merge.xts(annual_p[,311], annual_q[,311]); names(annual311) <- c("s", "si"); fac <- ifelse(timeDate::dayOfYear(timeDate::timeDate(xts::first(zoo::index(daily.object[[1]][,1]))))>311, 365, 0); zoo::index(annual311) <- as.Date(xts::first(zoo::index(daily.object[[1]][,1])))+fac+0:(length(annual311[,1])-1)*365
  
