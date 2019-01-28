@@ -1,4 +1,30 @@
-dsa v0.60.31 (Release date: 2018-10-29)
+
+dsa v0.60.35 (Release date: 2018-10-29)
+==============
+Changes: 
+- Bug fixes
+	- descaler: set y=NA as a default. Otherwise when descaler is only used for log-transformations, as then y does not need to be supplied, it lead to an error.
+
+
+
+
+dsa v0.60.34 (Release date: 2018-10-29)
+==============
+Changes: 
+- Bug fixes
+	- drop31: fixed an error that could lead to faulty transformation
+	
+	
+
+dsa v0.60.33 (Release date: 2018-10-29)
+==============
+Changes: 
+- Bug fixes
+	- fixed the fill_up function to correctly identify the 29th of February.
+
+
+
+dsa v0.60.32 (Release date: 2018-10-29)
 ==============
 
 Changes: 

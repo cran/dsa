@@ -9,13 +9,13 @@ dsa(series, span.start = NA, model = NULL, Log = FALSE, Diff = 0,
   s.window1 = 151, s.window2 = 51, s.window3 = 15, t.window1 = NULL,
   t.window2 = NULL, t.window3 = NULL, cval = 7, robust1 = TRUE,
   robust2 = TRUE, robust3 = TRUE, regressor = NULL,
-  forecast_regressor = NULL, reg.create = c("Easter", "Ascension"),
-  reg.dummy = NULL, outlier.types = c("AO", "LS", "TC"), modelspan = NULL,
-  trend_month = 3, outer3 = NULL, inner3 = NULL, h = 365,
-  reiterate3 = NULL, scaler = 1e+07, progressBar = TRUE)
+  forecast_regressor = NULL, reg.create = NULL, reg.dummy = NULL,
+  outlier.types = c("AO", "LS", "TC"), modelspan = NULL, trend_month = 3,
+  outer3 = NULL, inner3 = NULL, h = 365, reiterate3 = NULL,
+  scaler = 1e+07, progressBar = TRUE)
 }
 \arguments{
-\item{series}{Input time series}
+\item{series}{Input time series in xts format}
 
 \item{span.start}{Define when seasonal adjustment should begin}
 

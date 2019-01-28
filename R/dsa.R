@@ -1,7 +1,7 @@
 #' Seasonally Adjust Daily Time Series
 #' 
 #' Seasonally adjust daily time series using the dsa approach
-#' @param series Input time series
+#' @param series Input time series in xts format
 #' @param span.start Define when seasonal adjustment should begin
 #' @param Log Boolean. Should multiplicate or additive model be used?
 #' @param Diff Number of differences taken before STL is run.
@@ -39,7 +39,7 @@
 #' @details This function can be used to seasonally and calendar adjust daily time series using multiplicative model.
 #' @export
 
-dsa <- function(series, span.start=NA, model=NULL, Log=FALSE, Diff=0, automodel="reduced", ic="bic", fourier_number=NA, s.window1=151, s.window2=51, s.window3=15, t.window1=NULL, t.window2=NULL, t.window3=NULL,cval=7, robust1=TRUE, robust2=TRUE, robust3=TRUE, regressor=NULL, forecast_regressor=NULL, reg.create=c("Easter", "Ascension"), reg.dummy=NULL, outlier.types=c("AO", "LS", "TC"), modelspan=NULL, trend_month=3, outer3=NULL, inner3=NULL, h=365, reiterate3=NULL, scaler=1e7, progressBar=TRUE) {
+dsa <- function(series, span.start=NA, model=NULL, Log=FALSE, Diff=0, automodel="reduced", ic="bic", fourier_number=NA, s.window1=151, s.window2=51, s.window3=15, t.window1=NULL, t.window2=NULL, t.window3=NULL,cval=7, robust1=TRUE, robust2=TRUE, robust3=TRUE, regressor=NULL, forecast_regressor=NULL, reg.create=NULL, reg.dummy=NULL, outlier.types=c("AO", "LS", "TC"), modelspan=NULL, trend_month=3, outer3=NULL, inner3=NULL, h=365, reiterate3=NULL, scaler=1e7, progressBar=TRUE) {
   
 # Preliminary checks
   if (min(series, na.rm=TRUE)<=0 & Log) {stop("Series contains non-positive values. Only positive values allowed for multiplicative time series model. Set Log=FALSE")}
@@ -385,10 +385,15 @@ dsa <- function(series, span.start=NA, model=NULL, Log=FALSE, Diff=0, automodel=
   
   if (progressBar) {utils::setTxtProgressBar(pb, 19/21, label="Creating final output")}
   # Final Output
-  
+
   original <- Descaler(o_fc_xts, Log=Log, y=NA); colnames(original) <- "original series"
   final_sa <- Descaler(s_final_xts, Log=Log, y=NA); colnames(final_sa) <- "final sa series"
   final_sa[format(zoo::index(sc_fac), "%m-%d")=="02-29"] <- Descaler(Scaler(original[format(zoo::index(sc_fac), "%m-%d")=="02-29"], Log=Log) - Scaler(sc_fac[format(zoo::index(sc_fac), "%m-%d")=="02-29"], Log=Log), Log=Log, y=NA) * ifelse(Log, 100, 1)
+  
+  
+  
+  Scaler(original[format(zoo::index(sc_fac), "%m-%d")=="02-29"], Log=Log)
+  
   
   trend <- Descaler(trend, Log=Log, y=NA); colnames(trend) <- "final trend series"
   
@@ -427,8 +432,6 @@ dsa <- function(series, span.start=NA, model=NULL, Log=FALSE, Diff=0, automodel=
   
   info <- c(ifelse(Log, "Log", "Level"), Diff, h)
   
- 
- 
   output <- zoo::na.locf(xts::merge.xts(final_sa, original, sc_fac, trend))
   names(output) <- c("seas_adj", "original", "sc_fac", "trend")
   

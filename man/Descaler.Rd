@@ -4,7 +4,7 @@
 \alias{Descaler}
 \title{Invert taking logs and differences of  a time series}
 \usage{
-Descaler(x, y = NULL, Diff = 0, Sdiff = 0, Log = FALSE, Lag = NA)
+Descaler(x, y = NA, Diff = 0, Sdiff = 0, Log = FALSE, Lag = NA)
 }
 \arguments{
 \item{x}{time series}

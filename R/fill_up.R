@@ -27,11 +27,12 @@ for (m in 1:length(a)) {
 fill_up_series[as.Date(zoo::index(fill_up_series))==as.Date(a)] <- use_series[as.Date(zoo::index(use_series))==as.Date(a)]  
 fill_up_series <- zoo::na.spline(fill_up_series)  
 } else {
-suppressWarnings(fill_up_series[as.Date(zoo::index(fill_up_series))==as.Date(a)] <- use_series[as.Date(zoo::index(use_series))==as.Date(a)])  
+#suppressWarnings(fill_up_series[as.Date(zoo::index(fill_up_series))==as.Date(a)] <- use_series[as.Date(zoo::index(use_series))==as.Date(a)])  
+  suppressWarnings(fill_up_series[as.Date(zoo::index(fill_up_series)) %in% as.Date(a)] <- use_series[as.Date(zoo::index(fill_up_series)) %in% as.Date(a)])  
 }
 
-fill_up_series
-  
-  
+return(fill_up_series)
 }
+
+
 

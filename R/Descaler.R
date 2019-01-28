@@ -17,7 +17,7 @@
 
 
 
-Descaler <- function(x, y=NULL, Diff=0, Sdiff=0, Log=FALSE, Lag=NA) {
+Descaler <- function(x, y=NA, Diff=0, Sdiff=0, Log=FALSE, Lag=NA) {
   
   .diffinv_xts <- function(x, y, lag=1, differences=1, stepsize="days", ...) {
     if (all(class(y) != "xts")) {stop("The time series y needs to be an xts")}
