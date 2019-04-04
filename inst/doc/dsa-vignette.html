@@ -10,11 +10,11 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<meta name="author" content="Vignette Author" />
+<meta name="author" content="Daniel Ollech" />
 
-<meta name="date" content="2019-01-28" />
+<meta name="date" content="2019-04-04" />
 
-<title>Vignette Title</title>
+<title>DSA - Seasonal Adjustment of Daily Time Series</title>
 
 
 
@@ -68,214 +68,101 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 
 
 
-<h1 class="title toc-ignore">Vignette Title</h1>
-<h4 class="author"><em>Vignette Author</em></h4>
-<h4 class="date"><em>2019-01-28</em></h4>
+<h1 class="title toc-ignore">DSA - Seasonal Adjustment of Daily Time Series</h1>
+<h4 class="author"><em>Daniel Ollech</em></h4>
+<h4 class="date"><em>2019-04-04</em></h4>
 
 
 
-<p>Vignettes are long form documentation commonly included in packages. Because they are part of the distribution of the package, they need to be as compact as possible. The <code>html_vignette</code> output type provides a custom style sheet (and tweaks some options) to ensure that the resulting html is as small as possible. The <code>html_vignette</code> format:</p>
-<ul>
-<li>Never uses retina figures</li>
-<li>Has a smaller default figure size</li>
-<li>Uses a custom CSS stylesheet instead of the default Twitter Bootstrap style</li>
-</ul>
-<div id="vignette-info" class="section level2">
-<h2>Vignette Info</h2>
-<p>Note the various macros within the <code>vignette</code> section of the metadata block above. These are required in order to instruct R how to build the vignette. Note that you should change the <code>title</code> field and the <code>\VignetteIndexEntry</code> to match the title of your vignette.</p>
+<div id="daily-seasonal-adjustment" class="section level2">
+<h2>Daily Seasonal Adjustment</h2>
+<p>The dsa package includes functions to seasonally adjust time series with daily observations. Daily time series can contain three different seasonalities. Exemplarily, the currency in circulation is influenced by a weekday effect as the demand for banknotes increases towards the weekend. Monthly recurring troughs and peaks can often be observed, because salary payments tend to be concentrated around the turn of the month. Due to an increase in consumption the demand for currency reaches its high around Christmas time. In addition to these seasonal influences, the currency in circulation is positively impacted by Easter and other public holidays whose date changes from year to year. The procedure for daily calendar and seasonal adjustment (DSA) made available here combines a local regression based iterative seasonal adjustment routine with a time series regression model for the estimation of moving holiday and outlier effects. Details on the procedure can be found in Ollech (2018).</p>
 </div>
-<div id="styles" class="section level2">
-<h2>Styles</h2>
-<p>The <code>html_vignette</code> template includes a basic CSS theme. To override this theme you can specify your own CSS in the document metadata as follows:</p>
-<pre><code>output: 
-  rmarkdown::html_vignette:
-    css: mystyles.css</code></pre>
+<div id="to-get-started" class="section level2">
+<h2>To get started</h2>
+<p>We’ll simulated some seasonal daily data using the <strong>daily_sim()</strong> function and afterwards seasonally adjust that series using the <strong>dsa()</strong> function.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(dsa)
+<span class="kw">set.seed</span>(<span class="dv">5</span>)
+x =<span class="st"> </span><span class="kw">daily_sim</span>(<span class="dv">5</span>)<span class="op">$</span>original
+res &lt;-<span class="st"> </span><span class="kw">dsa</span>(x, <span class="dt">cval=</span><span class="dv">7</span>, <span class="dt">model=</span><span class="kw">c</span>(<span class="dv">3</span>,<span class="dv">1</span>,<span class="dv">0</span>),<span class="dt">fourier_number =</span> <span class="dv">13</span>, <span class="dt">reg.create=</span><span class="ot">NULL</span>) 
+<span class="co">#&gt; </span>
+  <span class="op">|</span><span class="st">                                                                       </span>
+<span class="st">  </span><span class="er">|</span><span class="st">                                                                 </span><span class="er">|</span><span class="st">   </span><span class="dv">0</span>%
+  <span class="op">|</span><span class="st">                                                                       </span>
+<span class="st">  </span><span class="er">|===</span><span class="st">                                                              </span><span class="er">|</span><span class="st">   </span><span class="dv">5</span>%
+  <span class="op">|</span><span class="st">                                                                       </span>
+<span class="st">  </span><span class="er">|======</span><span class="st">                                                           </span><span class="er">|</span><span class="st">  </span><span class="dv">10</span>%
+  <span class="op">|</span><span class="st">                                                                       </span>
+<span class="st">  </span><span class="er">|===============</span><span class="st">                                                  </span><span class="er">|</span><span class="st">  </span><span class="dv">24</span>%
+  <span class="op">|</span><span class="st">                                                                       </span>
+<span class="st">  </span><span class="er">|=========================</span><span class="st">                                        </span><span class="er">|</span><span class="st">  </span><span class="dv">38</span>%
+  <span class="op">|</span><span class="st">                                                                       </span>
+<span class="st">  </span><span class="er">|===========================================</span><span class="st">                      </span><span class="er">|</span><span class="st">  </span><span class="dv">67</span>%
+  <span class="op">|</span><span class="st">                                                                       </span>
+<span class="st">  </span><span class="er">|==============================================</span><span class="st">                   </span><span class="er">|</span><span class="st">  </span><span class="dv">71</span>%
+  <span class="op">|</span><span class="st">                                                                       </span>
+<span class="st">  </span><span class="er">|==================================================</span><span class="st">               </span><span class="er">|</span><span class="st">  </span><span class="dv">76</span>%
+  <span class="op">|</span><span class="st">                                                                       </span>
+<span class="st">  </span><span class="er">|===========================================================</span><span class="st">      </span><span class="er">|</span><span class="st">  </span><span class="dv">90</span>%
+  <span class="op">|</span><span class="st">                                                                       </span>
+<span class="st">  </span><span class="er">|=================================================================|</span><span class="st"> </span><span class="dv">100</span>%</code></pre></div>
+<p>To output the results, it is possible to create an HTML file that contains the most important results and visualisations.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">output</span>(res)
+<span class="co">#&gt; </span>
+  <span class="op">|</span><span class="st">                                                                       </span>
+<span class="st">  </span><span class="er">|</span><span class="st">                                                                 </span><span class="er">|</span><span class="st">   </span><span class="dv">0</span>%
+  <span class="op">|</span><span class="st">                                                                       </span>
+<span class="st">  </span><span class="er">|===</span><span class="st">                                                              </span><span class="er">|</span><span class="st">   </span><span class="dv">5</span>%
+  <span class="op">|</span><span class="st">                                                                       </span>
+<span class="st">  </span><span class="er">|============</span><span class="st">                                                     </span><span class="er">|</span><span class="st">  </span><span class="dv">19</span>%
+  <span class="op">|</span><span class="st">                                                                       </span>
+<span class="st">  </span><span class="er">|==============</span><span class="st">                                                   </span><span class="er">|</span><span class="st">  </span><span class="dv">21</span>%
+  <span class="op">|</span><span class="st">                                                                       </span>
+<span class="st">  </span><span class="er">|===============</span><span class="st">                                                  </span><span class="er">|</span><span class="st">  </span><span class="dv">23</span>%
+  <span class="op">|</span><span class="st">                                                                       </span>
+<span class="st">  </span><span class="er">|=================</span><span class="st">                                                </span><span class="er">|</span><span class="st">  </span><span class="dv">26</span>%
+  <span class="op">|</span><span class="st">                                                                       </span>
+<span class="st">  </span><span class="er">|===================</span><span class="st">                                              </span><span class="er">|</span><span class="st">  </span><span class="dv">29</span>%
+  <span class="op">|</span><span class="st">                                                                       </span>
+<span class="st">  </span><span class="er">|======================</span><span class="st">                                           </span><span class="er">|</span><span class="st">  </span><span class="dv">33</span>%
+  <span class="op">|</span><span class="st">                                                                       </span>
+<span class="st">  </span><span class="er">|=========================</span><span class="st">                                        </span><span class="er">|</span><span class="st">  </span><span class="dv">38</span>%
+<span class="co">#&gt; </span>
+  <span class="op">|</span><span class="st">                                                                       </span>
+<span class="st">  </span><span class="er">|===============================</span><span class="st">                                  </span><span class="er">|</span><span class="st">  </span><span class="dv">48</span>%
+  <span class="op">|</span><span class="st">                                                                       </span>
+<span class="st">  </span><span class="er">|=====================================</span><span class="st">                            </span><span class="er">|</span><span class="st">  </span><span class="dv">57</span>%
+<span class="co">#&gt; </span>
+  <span class="op">|</span><span class="st">                                                                       </span>
+<span class="st">  </span><span class="er">|========================================</span><span class="st">                         </span><span class="er">|</span><span class="st">  </span><span class="dv">62</span>%
+  <span class="op">|</span><span class="st">                                                                       </span>
+<span class="st">  </span><span class="er">|==============================================</span><span class="st">                   </span><span class="er">|</span><span class="st">  </span><span class="dv">71</span>%
+  <span class="op">|</span><span class="st">                                                                       </span>
+<span class="st">  </span><span class="er">|==================================================</span><span class="st">               </span><span class="er">|</span><span class="st">  </span><span class="dv">76</span>%
+<span class="co">#&gt; </span>
+  <span class="op">|</span><span class="st">                                                                       </span>
+<span class="st">  </span><span class="er">|========================================================</span><span class="st">         </span><span class="er">|</span><span class="st">  </span><span class="dv">86</span>%
+<span class="co">#&gt; </span>
+  <span class="op">|</span><span class="st">                                                                       </span>
+<span class="st">  </span><span class="er">|==============================================================</span><span class="st">   </span><span class="er">|</span><span class="st">  </span><span class="dv">95</span>%
+<span class="co">#&gt; </span>
+  <span class="op">|</span><span class="st">                                                                       </span>
+<span class="st">  </span><span class="er">|================================================================</span><span class="st"> </span><span class="er">|</span><span class="st">  </span><span class="dv">98</span>%
+<span class="co">#&gt; </span>
+  <span class="op">|</span><span class="st">                                                                       </span>
+<span class="st">  </span><span class="er">|=================================================================|</span><span class="st"> </span><span class="dv">100</span>%</code></pre></div>
 </div>
 <div id="figures" class="section level2">
 <h2>Figures</h2>
-<p>The figure sizes have been customised so that you can easily put two images side-by-side.</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">plot</span>(<span class="dv">1</span><span class="op">:</span><span class="dv">10</span>)
-<span class="kw">plot</span>(<span class="dv">10</span><span class="op">:</span><span class="dv">1</span>)</code></pre></div>
-<p><img src="data:image/png;base64,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" /><img src="data:image/png;base64,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" /></p>
-<p>You can enable figure captions by <code>fig_caption: yes</code> in YAML:</p>
-<pre><code>output:
-  rmarkdown::html_vignette:
-    fig_caption: yes</code></pre>
-<p>Then you can use the chunk option <code>fig.cap = &quot;Your figure caption.&quot;</code> in <strong>knitr</strong>.</p>
+<p>It is also possible, to work with the data directly and to use <strong>xtsplot()</strong> to plot the results.</p>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">sa &lt;-<span class="st"> </span>res<span class="op">$</span>output[,<span class="dv">1</span>]
+original &lt;-<span class="st"> </span>res<span class="op">$</span>output[,<span class="dv">2</span>]
+<span class="kw">plot</span>(<span class="kw">merge</span>(original, sa), <span class="dt">main=</span><span class="st">&quot;Results of Daily Seasonal Adjustment&quot;</span>)</code></pre></div>
+<p><img src="data:image/png;base64,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" /><!-- --></p>
 </div>
-<div id="more-examples" class="section level2">
-<h2>More Examples</h2>
-<p>You can write math expressions, e.g. <span class="math inline">\(Y = X\beta + \epsilon\)</span>, footnotes<a href="#fn1" class="footnoteRef" id="fnref1"><sup>1</sup></a>, and tables, e.g. using <code>knitr::kable()</code>.</p>
-<table>
-<thead>
-<tr class="header">
-<th></th>
-<th align="right">mpg</th>
-<th align="right">cyl</th>
-<th align="right">disp</th>
-<th align="right">hp</th>
-<th align="right">drat</th>
-<th align="right">wt</th>
-<th align="right">qsec</th>
-<th align="right">vs</th>
-<th align="right">am</th>
-<th align="right">gear</th>
-<th align="right">carb</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>Mazda RX4</td>
-<td align="right">21.0</td>
-<td align="right">6</td>
-<td align="right">160.0</td>
-<td align="right">110</td>
-<td align="right">3.90</td>
-<td align="right">2.620</td>
-<td align="right">16.46</td>
-<td align="right">0</td>
-<td align="right">1</td>
-<td align="right">4</td>
-<td align="right">4</td>
-</tr>
-<tr class="even">
-<td>Mazda RX4 Wag</td>
-<td align="right">21.0</td>
-<td align="right">6</td>
-<td align="right">160.0</td>
-<td align="right">110</td>
-<td align="right">3.90</td>
-<td align="right">2.875</td>
-<td align="right">17.02</td>
-<td align="right">0</td>
-<td align="right">1</td>
-<td align="right">4</td>
-<td align="right">4</td>
-</tr>
-<tr class="odd">
-<td>Datsun 710</td>
-<td align="right">22.8</td>
-<td align="right">4</td>
-<td align="right">108.0</td>
-<td align="right">93</td>
-<td align="right">3.85</td>
-<td align="right">2.320</td>
-<td align="right">18.61</td>
-<td align="right">1</td>
-<td align="right">1</td>
-<td align="right">4</td>
-<td align="right">1</td>
-</tr>
-<tr class="even">
-<td>Hornet 4 Drive</td>
-<td align="right">21.4</td>
-<td align="right">6</td>
-<td align="right">258.0</td>
-<td align="right">110</td>
-<td align="right">3.08</td>
-<td align="right">3.215</td>
-<td align="right">19.44</td>
-<td align="right">1</td>
-<td align="right">0</td>
-<td align="right">3</td>
-<td align="right">1</td>
-</tr>
-<tr class="odd">
-<td>Hornet Sportabout</td>
-<td align="right">18.7</td>
-<td align="right">8</td>
-<td align="right">360.0</td>
-<td align="right">175</td>
-<td align="right">3.15</td>
-<td align="right">3.440</td>
-<td align="right">17.02</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">3</td>
-<td align="right">2</td>
-</tr>
-<tr class="even">
-<td>Valiant</td>
-<td align="right">18.1</td>
-<td align="right">6</td>
-<td align="right">225.0</td>
-<td align="right">105</td>
-<td align="right">2.76</td>
-<td align="right">3.460</td>
-<td align="right">20.22</td>
-<td align="right">1</td>
-<td align="right">0</td>
-<td align="right">3</td>
-<td align="right">1</td>
-</tr>
-<tr class="odd">
-<td>Duster 360</td>
-<td align="right">14.3</td>
-<td align="right">8</td>
-<td align="right">360.0</td>
-<td align="right">245</td>
-<td align="right">3.21</td>
-<td align="right">3.570</td>
-<td align="right">15.84</td>
-<td align="right">0</td>
-<td align="right">0</td>
-<td align="right">3</td>
-<td align="right">4</td>
-</tr>
-<tr class="even">
-<td>Merc 240D</td>
-<td align="right">24.4</td>
-<td align="right">4</td>
-<td align="right">146.7</td>
-<td align="right">62</td>
-<td align="right">3.69</td>
-<td align="right">3.190</td>
-<td align="right">20.00</td>
-<td align="right">1</td>
-<td align="right">0</td>
-<td align="right">4</td>
-<td align="right">2</td>
-</tr>
-<tr class="odd">
-<td>Merc 230</td>
-<td align="right">22.8</td>
-<td align="right">4</td>
-<td align="right">140.8</td>
-<td align="right">95</td>
-<td align="right">3.92</td>
-<td align="right">3.150</td>
-<td align="right">22.90</td>
-<td align="right">1</td>
-<td align="right">0</td>
-<td align="right">4</td>
-<td align="right">2</td>
-</tr>
-<tr class="even">
-<td>Merc 280</td>
-<td align="right">19.2</td>
-<td align="right">6</td>
-<td align="right">167.6</td>
-<td align="right">123</td>
-<td align="right">3.92</td>
-<td align="right">3.440</td>
-<td align="right">18.30</td>
-<td align="right">1</td>
-<td align="right">0</td>
-<td align="right">4</td>
-<td align="right">4</td>
-</tr>
-</tbody>
-</table>
-<p>Also a quote using <code>&gt;</code>:</p>
-<blockquote>
-<p>“He who gives up [code] safety for [code] speed deserves neither.” (<a href="https://twitter.com/hadleywickham/status/504368538874703872">via</a>)</p>
-</blockquote>
-</div>
-<div class="footnotes">
-<hr />
-<ol>
-<li id="fn1"><p>A footnote here.<a href="#fnref1">↩</a></p></li>
-</ol>
+<div id="references" class="section level2">
+<h2>References</h2>
+<p>Ollech, Daniel (2018). Seasonal adjustment of daily time series. Bundesbank Discussion Paper 41/2018.</p>
 </div>
 
 

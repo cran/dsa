@@ -23,7 +23,7 @@ makeDummy <- function(holidays=NULL, from=-5, to=5, h=365, original=NA, original
 
     for (j in 1:length(holidays)) {    
       mhol_create <- function(back=1) {
-        stats::window(Holiday(eval(parse(text=paste("timeDate::", holidays[j], "(", as.character(s_start), ":", as.character(e_end), ")", sep=""))), shift=-back), start=stats::start(original2), end=stats::end(original2), frequency=365)}
+        stats::window(Holiday(eval(parse(text=paste("timeDate::", holidays[j], "(", as.character(s_start), ":", as.character(e_end), ")", sep=""))), shift=back), start=stats::start(original2), end=stats::end(original2), frequency=365)}
       for (k in from:to) {
             mhol <- ts.sum(lapply(c(k), function(x) {mhol_create(x)  }))
       if (j == 1 & k==from) { outhol <- mhol} else {
@@ -35,7 +35,7 @@ makeDummy <- function(holidays=NULL, from=-5, to=5, h=365, original=NA, original
       h <- h
       lhol_create <- function(back=1, k=1) { 
 
-        stats::window(Holiday(eval(parse(text=paste("timeDate::", holidays[j], "(", as.character(s_start), ":", as.character(e_end+h/365), ")", sep=""))), shift=-back), start=(stats::end(original2)+c(0,1)), end=(stats::end(original2)+c(k,0)), frequency=365) }
+        stats::window(Holiday(eval(parse(text=paste("timeDate::", holidays[j], "(", as.character(s_start), ":", as.character(e_end+h/365), ")", sep=""))), shift=back), start=(stats::end(original2)+c(0,1)), end=(stats::end(original2)+c(k,0)), frequency=365) }
       
       for (q in from:to) {
       lhol <- ts.sum(lapply(q, function(x) {lhol_create(back=x, k=h/365) }))

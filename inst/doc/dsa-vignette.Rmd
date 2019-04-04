@@ -1,12 +1,12 @@
 ---
-title: "Vignette Title"
-author: "Vignette Author"
+title: "DSA - Seasonal Adjustment of Daily Time Series"
+author: "Daniel Ollech"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteIndexEntry{DSA - Seasonal Adjustment of Daily Time Series}
   %\VignetteEngine{knitr::rmarkdown}
-  %\VignetteEncoding{UTF-8}
+  \usepackage[utf8]{inputenc}
 ---
 
 ```{r setup, include = FALSE}
@@ -16,50 +16,38 @@ knitr::opts_chunk$set(
 )
 ```
 
-Vignettes are long form documentation commonly included in packages. Because they are part of the distribution of the package, they need to be as compact as possible. The `html_vignette` output type provides a custom style sheet (and tweaks some options) to ensure that the resulting html is as small as possible. The `html_vignette` format:
+## Daily Seasonal Adjustment
+The dsa package includes functions to seasonally adjust time series with daily observations. Daily time series can contain three different seasonalities. Exemplarily, the currency in circulation is influenced by a weekday effect as the demand for banknotes increases towards the weekend.  Monthly recurring troughs and peaks can often be observed, because salary payments tend to be concentrated around the turn of the month. Due to an increase in consumption the demand for currency reaches its high around Christmas time. In addition to these seasonal influences, the currency in circulation is positively impacted by Easter and other public holidays whose date changes from year to year. The procedure for daily calendar and seasonal adjustment (DSA) made available here combines a local regression based iterative seasonal adjustment routine with a time series regression model for the estimation of moving holiday and outlier effects.
+Details on the procedure can be found in Ollech (2018).
 
-- Never uses retina figures
-- Has a smaller default figure size
-- Uses a custom CSS stylesheet instead of the default Twitter Bootstrap style
 
-## Vignette Info
+## To get started
 
-Note the various macros within the `vignette` section of the metadata block above. These are required in order to instruct R how to build the vignette. Note that you should change the `title` field and the `\VignetteIndexEntry` to match the title of your vignette.
+We'll simulated some seasonal daily data using the **daily_sim()** function and afterwards seasonally adjust that series using the **dsa()** function.
+```{r}
+library(dsa)
+set.seed(5)
+x = daily_sim(5)$original
+res <- dsa(x, cval=7, model=c(3,1,0),fourier_number = 13, reg.create=NULL) 
+```
 
-## Styles
+To output the results, it is possible to create an HTML file that contains the most important results and visualisations.
 
-The `html_vignette` template includes a basic CSS theme. To override this theme you can specify your own CSS in the document metadata as follows:
+```{r}
+output(res)
+```
 
-    output: 
-      rmarkdown::html_vignette:
-        css: mystyles.css
 
 ## Figures
 
-The figure sizes have been customised so that you can easily put two images side-by-side. 
+It is also possible, to work with the data directly and to use **xtsplot()** to plot the results.
 
 ```{r, fig.show='hold'}
-plot(1:10)
-plot(10:1)
+sa <- res$output[,1]
+original <- res$output[,2]
+plot(merge(original, sa), main="Results of Daily Seasonal Adjustment")
 ```
 
-You can enable figure captions by `fig_caption: yes` in YAML:
+## References
+Ollech, Daniel (2018). Seasonal adjustment of daily time series. Bundesbank Discussion Paper 41/2018.
 
-    output:
-      rmarkdown::html_vignette:
-        fig_caption: yes
-
-Then you can use the chunk option `fig.cap = "Your figure caption."` in **knitr**.
-
-## More Examples
-
-You can write math expressions, e.g. $Y = X\beta + \epsilon$, footnotes^[A footnote here.], and tables, e.g. using `knitr::kable()`.
-
-```{r, echo=FALSE, results='asis'}
-knitr::kable(head(mtcars, 10))
-```
-
-Also a quote using `>`:
-
-> "He who gives up [code] safety for [code] speed deserves neither."
-([via](https://twitter.com/hadleywickham/status/504368538874703872))

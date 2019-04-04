@@ -4,10 +4,17 @@ knitr::opts_chunk$set(
   comment = "#>"
 )
 
-## ---- fig.show='hold'----------------------------------------------------
-plot(1:10)
-plot(10:1)
+## ------------------------------------------------------------------------
+library(dsa)
+set.seed(5)
+x = daily_sim(5)$original
+res <- dsa(x, cval=7, model=c(3,1,0),fourier_number = 13, reg.create=NULL) 
 
-## ---- echo=FALSE, results='asis'-----------------------------------------
-knitr::kable(head(mtcars, 10))
+## ------------------------------------------------------------------------
+output(res)
+
+## ---- fig.show='hold'----------------------------------------------------
+sa <- res$output[,1]
+original <- res$output[,2]
+plot(merge(original, sa), main="Results of Daily Seasonal Adjustment")
 

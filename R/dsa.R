@@ -167,11 +167,11 @@ dsa <- function(series, span.start=NA, model=NULL, Log=FALSE, Diff=0, automodel=
     
     if(inherits(ol, "error")) {
       cval_new <- cval_new+1
-      tryCatch(suppressWarnings(outlier(series=s1_ts, model=s_arima365, cval=cval_new ,  types=outlier.types, holidays=cbind(hol$mhol, regressor), number.fourier=which.min(aicc400))), error=function(e) e)}
+      ol <- tryCatch(suppressWarnings(outlier(series=s1_ts, model=s_arima365, cval=cval_new ,  types=outlier.types, holidays=cbind(hol$mhol, regressor), number.fourier=which.min(aicc400))), error=function(e) e)}
     
     if(inherits(ol, "error")) {
       cval_new <- cval_new+1
-      tryCatch(suppressWarnings(outlier(series=s1_ts, model=s_arima365, cval=cval_new,  types=outlier.types, holidays=cbind(hol$mhol, regressor), number.fourier=which.min(aicc400))), error=function(e) e)}
+      ol <- tryCatch(suppressWarnings(outlier(series=s1_ts, model=s_arima365, cval=cval_new,  types=outlier.types, holidays=cbind(hol$mhol, regressor), number.fourier=which.min(aicc400))), error=function(e) e)}
     
     if(inherits(ol, "error")) {
       s1_ol <- s1_ts
@@ -187,7 +187,6 @@ dsa <- function(series, span.start=NA, model=NULL, Log=FALSE, Diff=0, automodel=
   
   arima_reg365   <-  forecast::Arima(s1_ol, order=c(s_arima365$arma[1],s_arima365$arma[6],s_arima365$arma[2]), xreg=cbind(forecast::fourier(s1_ts, which.min(aicc400)), hol$mhol, regressor), method="ML", include.constant=TRUE); model_aicc_E400 <- arima_reg365
   
-
   fc1 <- forecast::forecast(arima_reg365, h=h, xreg=cbind(forecast::fourier(s1_ts,which.min(aicc400), h=h), hol$lhol, forecast_regressor))
   
   if (!is.null(modelspan)) {
@@ -201,7 +200,6 @@ dsa <- function(series, span.start=NA, model=NULL, Log=FALSE, Diff=0, automodel=
     s1_fc <- stats::ts(c(fc1$model$x,fc1$mean), start=stats::start(s1_ts), frequency=365)
   }
   
-
   # Calendar Adjustment (Easter and Ascension / reg.create)
   if (!is.null(reg.create)) {
     if (is.null(dim(hol$mhol))) {
@@ -211,7 +209,6 @@ dsa <- function(series, span.start=NA, model=NULL, Log=FALSE, Diff=0, automodel=
     for (k in 1:dim(hol$mhol)[2]) {
       cf <- cf + ((model_aicc_E400$coef[grep("hol", names(model_aicc_E400$coef))][k]) * (rbind(hol$mhol, hol$lhol)[,k]))
     }}
-    
     k1 <- s1_fc - cf
   } else {
     k1 <- s1_fc
@@ -223,6 +220,7 @@ dsa <- function(series, span.start=NA, model=NULL, Log=FALSE, Diff=0, automodel=
       cf <- ((model_aicc_E400$coef[length(model_aicc_E400$coef)]) * (c(regressor, forecast_regressor)))
     } else {
     for (k in 1:dim(as.data.frame(regressor))[2]) {
+      cf <- 0
       cf <- cf + ((model_aicc_E400$coef[(length(model_aicc_E400$coef)+1-dim(as.data.frame(regressor))[2]):length(model_aicc_E400$coef)][k]) * (rbind(matrix(regressor, nrow=nrow(data.frame(regressor))),matrix(forecast_regressor, nrow=nrow(data.frame(forecast_regressor))))[,k]))
     }}
     
@@ -374,26 +372,23 @@ dsa <- function(series, span.start=NA, model=NULL, Log=FALSE, Diff=0, automodel=
   sc_fac[format(zoo::index(sc_fac), "%m-%d")=="02-29"] <- NA
   sc_fac <- zoo::na.spline(sc_fac)
   # Seasonal Factors
-
-  normSf <- function(x) {x - mean(x, na.rm=TRUE) + 100}
-  s1_fac <- normSf(Descaler(s1_fac, Log=Log, y=NA)* ifelse(Log, 100, 1)); colnames(s1_fac) <- "s1_fac"
-  k1_fac <-  normSf(Descaler(o_fc_xts, Log=Log, y=NA)/k1_only * ifelse(Log, 100, 1)); colnames(k1_fac) <- "k1_fac"
-  s2_fac <-  normSf(Descaler(o_fc_xts, Log=Log, y=NA)/s2_only* ifelse(Log, 100, 1)); colnames(s2_fac) <- "s2_fac"
-  s3_fac <-  normSf(Descaler(o_fc_xts, Log=Log, y=NA)/s3_only* ifelse(Log, 100, 1)); colnames(s3_fac) <- "s3_fac"
   
-  sfac_result <- xts::merge.xts(s1_fac, k1_fac, s2_fac, s3_fac)
+  
+  
+  normSf <- function(x, Log) {x - mean(x, na.rm=TRUE) + ifelse(Log, 100, 0)}
+  original_desc <- Descaler(o_fc_xts, Log=Log, y=NA)
+  s1_fac <- normSf(Descaler(s1_fac, Log=Log, y=NA)* ifelse(Log, 100, 1), Log=Log); colnames(s1_fac) <- "s1_fac"
+  k1_fac <- normSf(Descaler(Scaler(original_desc, Log=Log) - Scaler(k1_only, Log=Log), Log=Log, y=NA), Log=Log)
+  s2_fac <- normSf(Descaler(Scaler(original_desc, Log=Log) - Scaler(s2_only, Log=Log), Log=Log, y=NA), Log=Log)
+  s3_fac <- normSf(Descaler(Scaler(original_desc, Log=Log) - Scaler(s3_only, Log=Log), Log=Log, y=NA), Log=Log)
   
   if (progressBar) {utils::setTxtProgressBar(pb, 19/21, label="Creating final output")}
   # Final Output
 
   original <- Descaler(o_fc_xts, Log=Log, y=NA); colnames(original) <- "original series"
+  original <- original - as.numeric(utils::head(original, 1)) + ifelse(is.na(as.numeric(utils::head(Euro400,1))) , as.numeric(utils::head(original, 1)), as.numeric(utils::head(Euro400,1))) # Correction of the original series after several transformations to be equal to the original series
   final_sa <- Descaler(s_final_xts, Log=Log, y=NA); colnames(final_sa) <- "final sa series"
-  final_sa[format(zoo::index(sc_fac), "%m-%d")=="02-29"] <- Descaler(Scaler(original[format(zoo::index(sc_fac), "%m-%d")=="02-29"], Log=Log) - Scaler(sc_fac[format(zoo::index(sc_fac), "%m-%d")=="02-29"], Log=Log), Log=Log, y=NA) * ifelse(Log, 100, 1)
-  
-  
-  
-  Scaler(original[format(zoo::index(sc_fac), "%m-%d")=="02-29"], Log=Log)
-  
+  final_sa[format(zoo::index(sc_fac), "%m-%d")=="02-29"] <- Descaler(Scaler(original[format(zoo::index(sc_fac), "%m-%d")=="02-29"], Log=Log) - Scaler(sc_fac[format(zoo::index(sc_fac), "%m-%d")=="02-29"], Log=Log), Log=Log, y=NA) * ifelse(Log, 100, 1) 
   
   trend <- Descaler(trend, Log=Log, y=NA); colnames(trend) <- "final trend series"
   
@@ -421,6 +416,7 @@ dsa <- function(series, span.start=NA, model=NULL, Log=FALSE, Diff=0, automodel=
     stl_3$time.series <- stl_3$time.series*scaler
   }  
   
+  sfac_result <- xts::merge.xts(s1_fac, k1_fac, s2_fac, s3_fac)
   
   sa_result <- xts::merge.xts(s1_complete, k1_complete, s2_complete, final_sa);  colnames(sa_result) <- c("SA1", "cal_adj", "SA2", "SA3") # Die Ergebnisse der Zwischenschritte
   
