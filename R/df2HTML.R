@@ -7,7 +7,7 @@
 #' @author Daniel Ollech
 #' @examples a=data.frame(lapply(1:4, function(x) round(rnorm(10),2)))
 #' colnames(a) = paste0("x", 1:4)
-#' df2HTML(a, "out.html")
+#' \dontrun{df2HTML(a, "out.html")}
 #' @export
 
 

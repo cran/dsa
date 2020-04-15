@@ -4,7 +4,8 @@
 #' @param daily.object Output from dsa
 #' @param forecast Include forecast of component
 #' @author Daniel Ollech
-#' @examples x = daily_sim(n=4)$original # series with length 4 years
+#' @examples set.seed(123)
+#' x = daily_sim(n=4)$original # series with length 4 years
 #' res <- dsa(x, cval=7, model=c(3,1,0),fourier_number = 13, reg.create=NULL) 
 #' get_sa(res)
 #' @seealso get_trend, get_original

@@ -11,6 +11,7 @@
 #' @param Factor Scaling factor for series with large values
 #' @param everyDay Boolean. Inclusion of table that summarizes daily results
 #' @param seasonals Boolean. Plots of seasonal factors as interactive instead of static graph.
+#' @param spectrum_linesize Width of lines in spectrum.
 #' @param progressBar Should a progress bar be displayed?
 #' @author Daniel Ollech
 #' @details This function can be used to create plots and tables necessary for the analysis of seasonally and calendar adjusted daily time series. Uses the output of dsa() as an input.
@@ -19,7 +20,7 @@
 #' @importFrom dygraphs %>%
 #' @export
 
-output <- function(daily.object, path=getwd(), short=FALSE, SI=TRUE, SI365.seed=3, spec=TRUE, outlier=TRUE, Factor="auto", everyDay=TRUE, seasonals=FALSE, progressBar=TRUE) {
+output <- function(daily.object, path=getwd(), short=FALSE, SI=TRUE, SI365.seed=3, spec=TRUE, outlier=TRUE, Factor="auto", everyDay=TRUE, seasonals=FALSE, spectrum_linesize=0.5, progressBar=TRUE) {
   
   if (progressBar) {
     total <- 1
@@ -147,21 +148,21 @@ dir.create(paste(path, "Graphics", name, "Graphics", sep="/"))  }
     htmlwidgets::saveWidget(yeared_graph, paste(path, "Graphics", name, "Graphics", "SeasonalS3.html", sep="/"))
     } else {
       
-      grDevices::png(paste(path, "/", "Graphics/", name, "/Graphics/", "weekly_sfac.png", sep=""), width=1040, height=260, res=80, type="cairo-png")
+      grDevices::png(paste(path, "/", "Graphics/", name, "/Graphics/", "weekly_sfac.png", sep=""), width=1040, height=260, res=80)
       graphics::par(mar=c(3,3,1.5,1))
       how_many = 13
       graphics::plot(xts::last(zoo::index(weeked[,1]), 7*how_many),(xts::last(weeked[,1], 7*how_many)),col=c("#44a347"), lwd=4, ylab="", xlab="", bty="l", cex.axis=1.3, type="l")
       graphics::points(xts::last(zoo::index(weeked[,1]), 7*how_many), (xts::last(weeked[,2], 7*how_many)), pch=21, col="#4B1306", cex=1.2, bg="#44a347", lwd=3.0)
       grDevices::dev.off()
       
-      grDevices::png(paste(path, "/", "Graphics/", name, "/Graphics/", "monthly_sfac.png", sep=""), width=1040, height=260, res=80, type="cairo-png")
+      grDevices::png(paste(path, "/", "Graphics/", name, "/Graphics/", "monthly_sfac.png", sep=""), width=1040, height=260, res=80)
       graphics::par(mar=c(3,3,1.5,1))
       how_many = 4
       graphics::plot(xts::last(zoo::index(monthed[,1]), 31*how_many),(xts::last(monthed[,1], 31*how_many)),col=c("#9f5e1c"), lwd=4, ylab="", xlab="", bty="l", cex.axis=1.3, type="l")
       graphics::points(xts::last(zoo::index(monthed[,1]), 31*how_many), (xts::last(monthed[,2], 31*how_many)), pch=21, col="#4B1306", cex=1.2, bg="#9f5e1c", lwd=3.0)
       grDevices::dev.off()
       
-      grDevices::png(paste(path, "/", "Graphics/", name, "/Graphics/", "annual_sfac.png", sep=""), width=1040, height=260, res=80, type="cairo-png")
+      grDevices::png(paste(path, "/", "Graphics/", name, "/Graphics/", "annual_sfac.png", sep=""), width=1040, height=260, res=80)
       graphics::par(mar=c(3,3,1.5,1))
       how_many = 2
       graphics::plot(xts::last(zoo::index(quasi_sfac3[,1]), 366*how_many),(xts::last(quasi_sfac3[,1], 366*how_many)),col=c("#6A1B09"), lwd=4, ylab="", xlab="", bty="l", cex.axis=1.3, type="l")
@@ -245,13 +246,13 @@ dir.create(paste(path, "Graphics", name, "Graphics", sep="/"))  }
   
   if (!short) {
     if (progressBar) {utils::setTxtProgressBar(pb, 12/21, label="Create STL Output plots")}
-  grDevices::png(paste(path, "/", "Graphics/", name, "/Graphics/", name, "_stl_1.png", sep=""), width=840, height=480, type="cairo-png")
+  grDevices::png(paste(path, "/", "Graphics/", name, "/Graphics/", name, "_stl_1.png", sep=""), width=840, height=480)
   graphics::plot(daily.object$stl[[1]])
   grDevices::dev.off()
-  grDevices::png(paste(path, "/", "Graphics/", name, "/Graphics/", name, "_stl_2.png", sep=""), width=840, height=480, type="cairo-png")
+  grDevices::png(paste(path, "/", "Graphics/", name, "/Graphics/", name, "_stl_2.png", sep=""), width=840, height=480)
   graphics::plot(daily.object$stl[[2]])
   grDevices::dev.off()
-  grDevices::png(paste(path, "/", "Graphics/", name, "/Graphics/", name, "_stl_3.png", sep=""), width=840, height=480, type="cairo-png")
+  grDevices::png(paste(path, "/", "Graphics/", name, "/Graphics/", name, "_stl_3.png", sep=""), width=840, height=480)
   graphics::plot(daily.object$stl[[3]])
   grDevices::dev.off()
   
@@ -306,11 +307,9 @@ dir.create(paste(path, "Graphics", name, "Graphics", sep="/"))  }
       dsa::xtsplot(xts::merge.xts(dsa::ts2xts(y$orig), dsa::ts2xts(y$series_adj)), names=c("Original", "Outlier adjusted"), ...) + ggplot2::theme(panel.background=ggplot2::element_rect(fill="white"), plot.background=ggplot2::element_rect(fill="white"))
     }
     
-    #grDevices::png(paste(path, "/", "Graphics/", name, "/Graphics/", "outlierplot.png", sep=""), width=840, height=840, type="cairo-png")
     g1 <- outlierplot(daily.object, main="Outlier adjustment", textsize_title=0.87)
     ggplot2::ggsave(paste(path, "/", "Graphics/", name, "/Graphics/", "outlierplot.png", sep=""), plot=g1, width=17.2, height=8.6, units="cm", device="png")
-    #grDevices::dev.off()
-    
+
     R2HTML::HTMLInsertGraph(paste(path, "/", "Graphics/", name, "/Graphics/", "outlierplot.png", sep=""), Align="left", WidthHTML=700)
     
     
@@ -397,7 +396,7 @@ a_graph <-  xts::merge.xts(a1[,1], a2[,1], a3[,1], a4[,1],a5[,1], a6[,1],a7[,1])
     graphics::lines(zoo::index(x[,2][use_dates]), as.numeric(x[,1][use_dates]), col=col, lwd=4) }
   
   
-  grDevices::png(paste(path, "/", "Graphics/", name, "/Graphics/", "weekly_SI.png", sep=""), width=840, height=840, type="cairo-png")
+  grDevices::png(paste(path, "/", "Graphics/", name, "/Graphics/", "weekly_SI.png", sep=""), width=840, height=840)
   graphics::par(mfrow=c(4,2), mar=c(2.3,2.8,1.3,1))
  
   all_plot1(a_graph, main="Seasonal Factors")
@@ -482,7 +481,7 @@ if (SI) {
       graphics::plot(zoo::index(x[,2][use_dates]),as.numeric(x[,2][use_dates]), pch=21, type="p", ylab="", xlab="", cex=1.5, col=c("black"), bg="#166F07", bty="l", main=main, cex.main=1.7, cex.axis=1.7)
       graphics::lines(zoo::index(x[,2][use_dates]), as.numeric(x[,1][use_dates]), col="#8b0000", lwd=4) }
     
-    grDevices::png(paste(path, "/", "Graphics/", name, "/Graphics/", "monthly_SI.png", sep=""), width=840, height=940, type="cairo-png")
+    grDevices::png(paste(path, "/", "Graphics/", name, "/Graphics/", "monthly_SI.png", sep=""), width=840, height=940)
     layout_matrix <- matrix(c(1,2,4,6,1,3,5,7), ncol=2, nrow=4)
     graphics::layout(mat=layout_matrix, heights=c(1.2,1,1,1))
     graphics::par(mar=c(2.3,2.8,1.3,1))
@@ -575,7 +574,7 @@ if (SI) {
     graphics::plot(zoo::index(x[,2][use_dates]),as.numeric(x[,2][use_dates]), pch=21, type="p", ylab="", xlab="", cex=2.5, col=c("black"), bg="#07A513", bty="l", main=main, cex.main=1.7, cex.axis=1.7)
     graphics::lines(zoo::index(x[,2][use_dates]), as.numeric(x[,1][use_dates]), col="#8b0000", lwd=4) }
   
-  grDevices::png(paste(path, "/", "Graphics/", name, "/Graphics/", "annual_SI.png", sep=""), width=840, height=920, type="cairo-png")
+  grDevices::png(paste(path, "/", "Graphics/", name, "/Graphics/", "annual_SI.png", sep=""), width=840, height=920)
   layout_matrix <- matrix(c(1,2,5,8,1,3,6,9,1,4,7,10), ncol=3, nrow=4)
   graphics::layout(mat=layout_matrix, heights=c(1.2,1,1,1))
   graphics::par(mar=c(2.3,2.8,1.3,1))
@@ -600,19 +599,19 @@ if (SI) {
 
     grDevices::png(paste(path, "/", "Graphics/", name, "/Graphics/", name, "_specdiff.png", sep=""), width=720, height=550)
     df <- data.frame(spectrum=(stats::spec.pgram(diff(xts2ts(daily.object$output[,2][paste("/", (as.Date(stats::end(daily.object$output[,2])-365)), sep="")])), plot=F)$spec), freq=stats::spec.pgram(diff(xts2ts(daily.object$output[,2][paste("/", (as.Date(stats::end(daily.object$output[,2])-365)), sep="")])), plot=F)$freq)
-    plot1 <- ggplot2::qplot(x=df$freq, y=df$spectrum, data=df, geom="line", log="y") +ggplot2::geom_vline(ggplot2::aes(xintercept=12), colour="#6F87B2", linetype="dotted") +ggplot2::geom_vline(ggplot2::aes(xintercept=24), colour="#6F87B2", linetype="dotted")  +ggplot2::geom_vline(ggplot2::aes(xintercept=365/7), colour="#6F87B2", linetype="dotted") +ggplot2::geom_vline(ggplot2::aes(xintercept=365/7*2), colour="#6F87B2", linetype="dotted") + ggplot2::geom_vline(ggplot2::aes(xintercept=365/7*3), colour="#6F87B2", linetype="dotted") + ggplot2::theme_bw() + ggplot2::theme(panel.grid = ggplot2::element_blank()) + ggplot2::ggtitle("Differenced original series")
+    plot1 <- ggplot2::ggplot(df, ggplot2::aes(x=df$freq, y=df$spectrum)) + ggplot2::geom_line(size=spectrum_linesize) +  ggplot2::scale_y_continuous(trans='log10') + ggplot2::geom_vline(ggplot2::aes(xintercept=12), colour="#6F87B2", linetype="dotted") +ggplot2::geom_vline(ggplot2::aes(xintercept=24), colour="#6F87B2", linetype="dotted")  +ggplot2::geom_vline(ggplot2::aes(xintercept=365/7), colour="#6F87B2", linetype="dotted") +ggplot2::geom_vline(ggplot2::aes(xintercept=365/7*2), colour="#6F87B2", linetype="dotted") + ggplot2::geom_vline(ggplot2::aes(xintercept=365/7*3), colour="#6F87B2", linetype="dotted") + ggplot2::theme_bw() + ggplot2::theme(panel.grid = ggplot2::element_blank()) + ggplot2::ggtitle("Differenced original series")
     
     df2 <- data.frame(spectrum=(stats::spec.pgram(diff(xts2ts(daily.object$output[,1][paste("/", (as.Date(stats::end(daily.object$output[,1])-365)), sep="")])), plot=F)$spec), freq=stats::spec.pgram(diff(xts2ts(daily.object$output[,1][paste("/", (as.Date(stats::end(daily.object$output[,1])-365)), sep="")])), plot=F)$freq)
-    plot2 <- ggplot2::qplot(x=df2$freq, y=df2$spectrum, data=df2, geom="line", log="y") +ggplot2::geom_vline(ggplot2::aes(xintercept=12), colour="#6F87B2", linetype="dotted") +ggplot2::geom_vline(ggplot2::aes(xintercept=24), colour="#6F87B2", linetype="dotted")  +ggplot2::geom_vline(ggplot2::aes(xintercept=365/7), colour="#6F87B2", linetype="dotted") +ggplot2::geom_vline(ggplot2::aes(xintercept=365/7*2), colour="#6F87B2", linetype="dotted") +ggplot2::geom_vline(ggplot2::aes(xintercept=365/7*3), colour="#6F87B2", linetype="dotted") + ggplot2::theme_bw() + ggplot2::theme(panel.grid = ggplot2::element_blank()) + ggplot2::ggtitle("Differenced final adjusted series")
+    plot2 <-  ggplot2::ggplot(df2, ggplot2::aes(x=df2$freq, y=df2$spectrum)) + ggplot2::geom_line(size=spectrum_linesize)+  ggplot2::scale_y_continuous(trans='log10')  +ggplot2::geom_vline(ggplot2::aes(xintercept=12), colour="#6F87B2", linetype="dotted") +ggplot2::geom_vline(ggplot2::aes(xintercept=24), colour="#6F87B2", linetype="dotted")  +ggplot2::geom_vline(ggplot2::aes(xintercept=365/7), colour="#6F87B2", linetype="dotted") +ggplot2::geom_vline(ggplot2::aes(xintercept=365/7*2), colour="#6F87B2", linetype="dotted") +ggplot2::geom_vline(ggplot2::aes(xintercept=365/7*3), colour="#6F87B2", linetype="dotted") + ggplot2::theme_bw() + ggplot2::theme(panel.grid = ggplot2::element_blank()) + ggplot2::ggtitle("Differenced final adjusted series")
     suppressWarnings(gridExtra::grid.arrange(plot1, plot2, nrow=2)) 
     grDevices::dev.off()
     
     grDevices::png(paste(path, "/", "Graphics/", name, "/Graphics/", name, "_specdiff_xlog.png", sep=""), width=720, height=550)
     df <- data.frame(spectrum=(stats::spec.pgram(diff(xts2ts(daily.object$output[,2][paste("/", (as.Date(stats::end(daily.object$output[,2])-365)), sep="")])), plot=F)$spec), freq=stats::spec.pgram(diff(xts2ts(daily.object$output[,2][paste("/", (as.Date(stats::end(daily.object$output[,2])-365)), sep="")])), plot=F)$freq); df <- df[df$freq>0.8,]
-    plot1 <- ggplot2::qplot(x=df$freq, y=df$spectrum, data=df, geom="line", log="xy") +ggplot2::geom_vline(ggplot2::aes(xintercept=1), colour="#3AA625", linetype="dotted") +ggplot2::geom_vline(ggplot2::aes(xintercept=2), colour="#3AA625", linetype="dotted")  +ggplot2::geom_vline(ggplot2::aes(xintercept=3), colour="#3AA625", linetype="dotted") +ggplot2::geom_vline(ggplot2::aes(xintercept=4), colour="#3AA625", linetype="dotted") +ggplot2::geom_vline(ggplot2::aes(xintercept=5), colour="#3AA625", linetype="dotted") +ggplot2::geom_vline(ggplot2::aes(xintercept=6), colour="#3AA625", linetype="dotted") +ggplot2::geom_vline(ggplot2::aes(xintercept=7), colour="#3AA625", linetype="dotted") +ggplot2::geom_vline(ggplot2::aes(xintercept=8), colour="#3AA625", linetype="dotted") +ggplot2::geom_vline(ggplot2::aes(xintercept=9), colour="#3AA625", linetype="dotted") +ggplot2::geom_vline(ggplot2::aes(xintercept=10), colour="#3AA625", linetype="dotted") +ggplot2::geom_vline(ggplot2::aes(xintercept=12), colour="#FFBC00", linetype="dotted") +ggplot2::geom_vline(ggplot2::aes(xintercept=24), colour="#FFBC00", linetype="dotted")  +ggplot2::geom_vline(ggplot2::aes(xintercept=365/7), colour="#DB05D7", linetype="dotted") +ggplot2::geom_vline(ggplot2::aes(xintercept=365/7*2), colour="#DB05D7", linetype="dotted") +ggplot2::geom_vline(ggplot2::aes(xintercept=365/7*3), colour="#DB05D7", linetype="dotted") + ggplot2::theme_bw() + ggplot2::theme(panel.grid = ggplot2::element_blank()) + ggplot2::ggtitle("Differenced original series, x-axis=log")
+    plot1 <-  ggplot2::ggplot(df, ggplot2::aes(x=df$freq, y=df$spectrum)) + ggplot2::geom_line(size=spectrum_linesize) +  ggplot2::scale_y_continuous(trans='log10')+  ggplot2::scale_x_continuous(trans='log10') +ggplot2::geom_vline(ggplot2::aes(xintercept=1), colour="#3AA625", linetype="dotted") +ggplot2::geom_vline(ggplot2::aes(xintercept=2), colour="#3AA625", linetype="dotted")  +ggplot2::geom_vline(ggplot2::aes(xintercept=3), colour="#3AA625", linetype="dotted") +ggplot2::geom_vline(ggplot2::aes(xintercept=4), colour="#3AA625", linetype="dotted") +ggplot2::geom_vline(ggplot2::aes(xintercept=5), colour="#3AA625", linetype="dotted") +ggplot2::geom_vline(ggplot2::aes(xintercept=6), colour="#3AA625", linetype="dotted") +ggplot2::geom_vline(ggplot2::aes(xintercept=7), colour="#3AA625", linetype="dotted") +ggplot2::geom_vline(ggplot2::aes(xintercept=8), colour="#3AA625", linetype="dotted") +ggplot2::geom_vline(ggplot2::aes(xintercept=9), colour="#3AA625", linetype="dotted") +ggplot2::geom_vline(ggplot2::aes(xintercept=10), colour="#3AA625", linetype="dotted") +ggplot2::geom_vline(ggplot2::aes(xintercept=12), colour="#FFBC00", linetype="dotted") +ggplot2::geom_vline(ggplot2::aes(xintercept=24), colour="#FFBC00", linetype="dotted")  +ggplot2::geom_vline(ggplot2::aes(xintercept=365/7), colour="#DB05D7", linetype="dotted") +ggplot2::geom_vline(ggplot2::aes(xintercept=365/7*2), colour="#DB05D7", linetype="dotted") +ggplot2::geom_vline(ggplot2::aes(xintercept=365/7*3), colour="#DB05D7", linetype="dotted") + ggplot2::theme_bw() + ggplot2::theme(panel.grid = ggplot2::element_blank()) + ggplot2::ggtitle("Differenced original series, x-axis=log")
     
     df2 <- data.frame(spectrum=(stats::spec.pgram(diff(xts2ts(daily.object$output[,1][paste("/", (as.Date(stats::end(daily.object$output[,1])-365)), sep="")])), plot=F)$spec), freq=stats::spec.pgram(diff(xts2ts(daily.object$output[,1][paste("/", (as.Date(stats::end(daily.object$output[,1])-365)), sep="")])), plot=F)$freq) ; df2 <- df2[df2$freq>0.8,]
-    plot2 <- ggplot2::qplot(x=df2$freq, y=df2$spectrum, data=df2, geom="line", log="xy") + ggplot2::geom_vline(ggplot2::aes(xintercept=1), colour="#3AA625", linetype="dotted") + ggplot2::geom_vline(ggplot2::aes(xintercept=2), colour="#3AA625", linetype="dotted")  + ggplot2::geom_vline(ggplot2::aes(xintercept=3), colour="#3AA625", linetype="dotted") + ggplot2::geom_vline(ggplot2::aes(xintercept=4), colour="#3AA625", linetype="dotted") +ggplot2::geom_vline(ggplot2::aes(xintercept=5), colour="#3AA625", linetype="dotted") + ggplot2::geom_vline(ggplot2::aes(xintercept=6), colour="#3AA625", linetype="dotted") + ggplot2::geom_vline(ggplot2::aes(xintercept=7), colour="#3AA625", linetype="dotted") +ggplot2::geom_vline(ggplot2::aes(xintercept=8), colour="#3AA625", linetype="dotted") +ggplot2::geom_vline(ggplot2::aes(xintercept=9), colour="#3AA625", linetype="dotted") +ggplot2::geom_vline(ggplot2::aes(xintercept=10), colour="#3AA625", linetype="dotted") + ggplot2::geom_vline(ggplot2::aes(xintercept=12), colour="#FFBC00", linetype="dotted") + ggplot2::geom_vline(ggplot2::aes(xintercept=24), colour="#FFBC00", linetype="dotted")  +ggplot2::geom_vline(ggplot2::aes(xintercept=365/7), colour="#DB05D7", linetype="dotted") +ggplot2::geom_vline(ggplot2::aes(xintercept=365/7*2), colour="#DB05D7", linetype="dotted") + ggplot2::geom_vline(ggplot2::aes(xintercept=365/7*3), colour="#DB05D7", linetype="dotted") + ggplot2::theme_bw() + ggplot2::theme(panel.grid = ggplot2::element_blank()) + ggplot2::ggtitle("Differenced final adjusted series, x-axis=log")
+    plot2 <- ggplot2::ggplot(df2, ggplot2::aes(x=df2$freq, y=df2$spectrum)) + ggplot2::geom_line(size=spectrum_linesize) +  ggplot2::scale_y_continuous(trans='log10')+  ggplot2::scale_x_continuous(trans='log10') + ggplot2::geom_vline(ggplot2::aes(xintercept=1), colour="#3AA625", linetype="dotted") + ggplot2::geom_vline(ggplot2::aes(xintercept=2), colour="#3AA625", linetype="dotted")  + ggplot2::geom_vline(ggplot2::aes(xintercept=3), colour="#3AA625", linetype="dotted") + ggplot2::geom_vline(ggplot2::aes(xintercept=4), colour="#3AA625", linetype="dotted") +ggplot2::geom_vline(ggplot2::aes(xintercept=5), colour="#3AA625", linetype="dotted") + ggplot2::geom_vline(ggplot2::aes(xintercept=6), colour="#3AA625", linetype="dotted") + ggplot2::geom_vline(ggplot2::aes(xintercept=7), colour="#3AA625", linetype="dotted") +ggplot2::geom_vline(ggplot2::aes(xintercept=8), colour="#3AA625", linetype="dotted") +ggplot2::geom_vline(ggplot2::aes(xintercept=9), colour="#3AA625", linetype="dotted") +ggplot2::geom_vline(ggplot2::aes(xintercept=10), colour="#3AA625", linetype="dotted") + ggplot2::geom_vline(ggplot2::aes(xintercept=12), colour="#FFBC00", linetype="dotted") + ggplot2::geom_vline(ggplot2::aes(xintercept=24), colour="#FFBC00", linetype="dotted")  +ggplot2::geom_vline(ggplot2::aes(xintercept=365/7), colour="#DB05D7", linetype="dotted") +ggplot2::geom_vline(ggplot2::aes(xintercept=365/7*2), colour="#DB05D7", linetype="dotted") + ggplot2::geom_vline(ggplot2::aes(xintercept=365/7*3), colour="#DB05D7", linetype="dotted") + ggplot2::theme_bw() + ggplot2::theme(panel.grid = ggplot2::element_blank()) + ggplot2::ggtitle("Differenced final adjusted series, x-axis=log")
     suppressWarnings(gridExtra::grid.arrange(plot1, plot2, nrow=2)) 
     grDevices::dev.off()
    

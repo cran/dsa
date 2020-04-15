@@ -12,7 +12,7 @@ Holiday <- function(dates=timeDate::Easter(2000:2030), shift=0) {
   Holiday_dates <- timeDate::as.Date.timeDate(dates)+shift
   
   vec <- rep(1, times=length(Holiday_dates))
-  Holiday_ones <- xts::xts(vec, order.by=Holiday_dates); 
+  Holiday_ones <- xts::xts(vec, order.by=Holiday_dates) 
   
   
   # Version of xts2ts that starts on January 1st of the start year and end December 31st in the last year (instead of the original series start and end date)

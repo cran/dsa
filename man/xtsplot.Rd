@@ -4,11 +4,28 @@
 \alias{xtsplot}
 \title{Create a plot for xts series}
 \usage{
-xtsplot(xts, transform = "none", type = "line", years = NA, scale = 1,
-  names = NA, color = NA, main = "", legend = NA, textsize = 1,
-  textsize_x = NA, textsize_y = NA, textsize_legend = NA,
-  textsize_title = NA, linesize = 1.1, WeekOfYear = F, date_breaks = NA,
-  date_labels = NA, submain = NULL, font = NA)
+xtsplot(
+  xts,
+  transform = "none",
+  type = "line",
+  years = NA,
+  scale = 1,
+  names = NA,
+  color = NA,
+  main = "",
+  legend = NA,
+  textsize = 1,
+  textsize_x = NA,
+  textsize_y = NA,
+  textsize_legend = NA,
+  textsize_title = NA,
+  linesize = 1.1,
+  WeekOfYear = F,
+  date_breaks = NA,
+  date_labels = NA,
+  submain = NULL,
+  font = NA
+)
 }
 \arguments{
 \item{xts}{one or many series}

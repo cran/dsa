@@ -20,6 +20,7 @@ Calculate the trend-cycle based on a seasonally adjusted series obtained from a 
 If not odd the parameter trend_length is set to the next highest odd number.
 }
 \examples{
+set.seed(123)
 x = daily_sim(n=4)$original # series with length 4 years
 res <- dsa(x, cval=7, model=c(3,1,0),fourier_number = 13, reg.create=NULL) 
 get_trend(res)

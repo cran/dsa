@@ -4,12 +4,13 @@
 #' @param day Day of the Week for which dummy is created
 #' @param start Startdate
 #' @param end Enddate
+#' @param delete29_2 Should 29 Feb be deleted?
 #' @author Daniel Ollech
 #' @details This function is used in dsa() to create day of the week dummies.
 #' @examples plot(dow_dummy())
 #' @export
 
-dow_dummy <- function(day="1", start="2010/1/1", end="2015/01/01") {
+dow_dummy <- function(day="1", start="2010/1/1", end="2015/01/01", delete29_2=FALSE) {
   if (length(start)==2) {
     start <- as.Date(start[2] - 1, origin = paste(start[1], "-01-01", sep=""))
   }
@@ -23,6 +24,13 @@ dow_dummy <- function(day="1", start="2010/1/1", end="2015/01/01") {
 
   series <- xts::xts(rep(0, times=length(date)), order.by=date)
   series[format(zoo::index(series), "%u")==day] <- 1
+  
+  if (delete29_2) {
+    series[format(zoo::index(series), "%m-%d")=="02-29"] <- NA
+    
+    series <- stats::na.omit(series)
+  }
+  
   series <- stats::ts(series[!is.na(series)], start=c(as.integer(format(as.Date(start), "%Y")), timeDate::dayOfYear(timeDate::timeDate(start, format="%Y/%m/%d"))), frequency=365)
   
   series  

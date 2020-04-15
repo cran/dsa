@@ -4,9 +4,19 @@
 \alias{daily_sim}
 \title{Create a simple, exemplary, seasonal, daily time series}
 \usage{
-daily_sim(n = 8, week_effect = 1, month_effect = 1, year_effect = 1,
-  model = c(3, 1, 1), ar = c(-0.2, 0.5, 0.1), ma = -0.4, moving = T,
-  week_cycles = 2, month_cycles = 3, year_cycles = 8)
+daily_sim(
+  n = 8,
+  week_effect = 1,
+  month_effect = 1,
+  year_effect = 1,
+  model = c(3, 1, 1),
+  ar = c(-0.2, 0.5, 0.1),
+  ma = -0.4,
+  moving = T,
+  week_cycles = 2,
+  month_cycles = 3,
+  year_cycles = 8
+)
 }
 \arguments{
 \item{n}{length of time series in years}

@@ -4,9 +4,17 @@
 \alias{outlier}
 \title{Outlier adjustment of daily time series}
 \usage{
-outlier(series, model, cval = 7, types = c("AO", "LS", "TC"),
-  maxit.oloop = 1, maxit.iloop = 2, maxit.endloop = 1000,
-  holidays = NULL, number.fourier = 13)
+outlier(
+  series,
+  model,
+  cval = 7,
+  types = c("AO", "LS", "TC"),
+  maxit.oloop = 1,
+  maxit.iloop = 2,
+  maxit.endloop = 1000,
+  holidays = NULL,
+  number.fourier = 13
+)
 }
 \arguments{
 \item{series}{Input time series}

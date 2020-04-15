@@ -80,13 +80,13 @@ xtsplot <- function(xts, transform="none", type="line", years=NA, scale=1, names
   
 
   if (is.na(font)) {
-    extrafont::loadfonts(device="win", quiet=T)
+    if(.Platform$OS.type=="windows") {extrafont::loadfonts(device="win", quiet=T)}
     extrafont::loadfonts(device="pdf", quiet=T)
-  thefont <- extrafont::choose_font(c("Cambria", "Times New Roman", "Arial", "sans"))} else {
+  thefont <- extrafont::choose_font(c("Segoe UI","Cambria", "Times New Roman", "Arial", "sans"))} else {
     thefont <- font
   }
   
-  if(thefont=="") {message("Try using extrafont::font_import() to load all windows fonts")}
+  if(thefont=="") {message("Try using extrafont::font_import() to load all fonts")}
   
   if (is.na(date_breaks)) {
     timedifference <- as.numeric(difftime(xts::last(time), xts::first(time), units="days"))

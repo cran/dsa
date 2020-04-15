@@ -24,6 +24,7 @@
 #' @param reg.create Names of Holidays for which regressors will be created
 #' @param reg.dummy If specified dummy variables of specified length are created and used as regressors
 #' @param modelspan Last x years used for regARIMA modelling.
+#' @param feb29 How should February 29th be derived: interpolation of adjusted series ("sa") or combined factor ("sfac")?
 #' @param outlier.types The following are possible: "LS", "TC", "AO", "IO"
 #' @param trend_month Length of support period for trend estimation
 #' @param outer3 Number of iterations of outer loop in STL for day of the year effect
@@ -39,7 +40,7 @@
 #' @details This function can be used to seasonally and calendar adjust daily time series using multiplicative model.
 #' @export
 
-dsa <- function(series, span.start=NA, model=NULL, Log=FALSE, Diff=0, automodel="reduced", ic="bic", fourier_number=NA, s.window1=151, s.window2=51, s.window3=15, t.window1=NULL, t.window2=NULL, t.window3=NULL,cval=7, robust1=TRUE, robust2=TRUE, robust3=TRUE, regressor=NULL, forecast_regressor=NULL, reg.create=NULL, reg.dummy=NULL, outlier.types=c("AO", "LS", "TC"), modelspan=NULL, trend_month=3, outer3=NULL, inner3=NULL, h=365, reiterate3=NULL, scaler=1e7, progressBar=TRUE) {
+dsa <- function(series, span.start=NA, model=NULL, Log=FALSE, Diff=0, automodel="reduced", ic="bic", fourier_number=NA, s.window1=151, s.window2=51, s.window3=15, t.window1=NULL, t.window2=NULL, t.window3=NULL,cval=7, robust1=TRUE, robust2=TRUE, robust3=TRUE, regressor=NULL, forecast_regressor=NULL, reg.create=NULL, reg.dummy=NULL, outlier.types=c("AO", "LS", "TC"), modelspan=NULL, feb29="sfac", trend_month=3, outer3=NULL, inner3=NULL, h=365, reiterate3=NULL, scaler=1e7, progressBar=TRUE) {
   
 # Preliminary checks
   if (min(series, na.rm=TRUE)<=0 & Log) {stop("Series contains non-positive values. Only positive values allowed for multiplicative time series model. Set Log=FALSE")}
@@ -87,10 +88,16 @@ dsa <- function(series, span.start=NA, model=NULL, Log=FALSE, Diff=0, automodel=
 
   #### Step 2: Adjustment of Holiday Effects and Forecasting
   # Removing Feb 29th
-  times <- as.POSIXlt(seq.Date(from=as.Date(xts::first(zoo::index(Euro400))), to=as.Date(xts::last(zoo::index(Euro400))), by="days"))
+    times <- as.POSIXlt(seq.Date(from=as.Date(xts::first(zoo::index(Euro400))), to=as.Date(xts::last(zoo::index(Euro400))), by="days"))
+  
   s1_xts <- xts::xts(s1, order.by=xts::last(times, n=length(s1))) 
   s1_xts[format(zoo::index(s1_xts), "%m-%d")=="02-29"] <- NA
-  s1_ts <- stats::ts(s1_xts[!is.na(s1_xts)], start=c(as.integer(format(zoo::index(s1_xts)[1], "%Y")), as.integer(timeDate::dayOfYear(timeDate::timeDate(zoo::index(s1_xts[1]))))), freq=365)[,1]   
+  
+  s1_xts <- stats::na.omit(s1_xts) 
+  #s1_ts <- stats::ts(s1_xts[!is.na(s1_xts)], start=c(as.integer(format(zoo::index(s1_xts)[1], "%Y")), as.integer(timeDate::dayOfYear(timeDate::timeDate(zoo::index(s1_xts[1]))))), freq=365)[,1]
+  sstart <- c(as.integer(format(zoo::index(s1_xts)[1], "%Y")), as.integer(timeDate::dayOfYear(timeDate::timeDate(zoo::index(s1_xts[1]))))) 
+  sstart[2] <- min(365, sstart[2]) 
+  s1_ts <- stats::ts(s1_xts, start=sstart, freq=365)[,1] 
 
   # Creating Holiday Regressors 
 
@@ -148,9 +155,9 @@ dsa <- function(series, span.start=NA, model=NULL, Log=FALSE, Diff=0, automodel=
       a3 <- tryCatch(forecast::Arima(s1_ts, order=c(s_arima365_prior$arma[1],s_arima365_prior$arma[6],s_arima365_prior$arma[2]), xreg=cbind(forecast::fourier(s1_ts,j), hol$mhol, regressor), method="ML"), error=function(e) e)
       if(inherits(a3, "error")) {next}
       
-      aicc400[j] <- a3$aicc#; bic400[j] <- a3$bic; #aicc400_2[j] <- a$aicc
+      aicc400[j] <- a3$aicc
     }} else {
-      aicc400 <- c(NA, rep=30)
+      aicc400 <- rep(NA, times=30)
       aicc400[fourier_number] <- 5
     }
   
@@ -187,6 +194,7 @@ dsa <- function(series, span.start=NA, model=NULL, Log=FALSE, Diff=0, automodel=
   
   arima_reg365   <-  forecast::Arima(s1_ol, order=c(s_arima365$arma[1],s_arima365$arma[6],s_arima365$arma[2]), xreg=cbind(forecast::fourier(s1_ts, which.min(aicc400)), hol$mhol, regressor), method="ML", include.constant=TRUE); model_aicc_E400 <- arima_reg365
   
+  arima_reg365 <<- arima_reg365; h <<- h; s1_ts <<- s1_ts; aicc400 <<- aicc400; hol <<- hol; forecast_regressor <<- forecast_regressor
   fc1 <- forecast::forecast(arima_reg365, h=h, xreg=cbind(forecast::fourier(s1_ts,which.min(aicc400), h=h), hol$lhol, forecast_regressor))
   
   if (!is.null(modelspan)) {
@@ -219,8 +227,8 @@ dsa <- function(series, span.start=NA, model=NULL, Log=FALSE, Diff=0, automodel=
     if (is.null(dim(as.data.frame(regressor)))) {
       cf <- ((model_aicc_E400$coef[length(model_aicc_E400$coef)]) * (c(regressor, forecast_regressor)))
     } else {
-    for (k in 1:dim(as.data.frame(regressor))[2]) {
       cf <- 0
+    for (k in 1:dim(as.data.frame(regressor))[2]) {
       cf <- cf + ((model_aicc_E400$coef[(length(model_aicc_E400$coef)+1-dim(as.data.frame(regressor))[2]):length(model_aicc_E400$coef)][k]) * (rbind(matrix(regressor, nrow=nrow(data.frame(regressor))),matrix(forecast_regressor, nrow=nrow(data.frame(forecast_regressor))))[,k]))
     }}
     
@@ -234,7 +242,7 @@ dsa <- function(series, span.start=NA, model=NULL, Log=FALSE, Diff=0, automodel=
   #### Step 3: Adjustment of Monthly Period 
   k1_xts <- ts2xts(k1);  
   k1_complete <- k1_xts   
-  k1_31 <- fill31(k1_xts, fill="spline") ;  
+  k1_31 <- fill31(k1_xts, fill="spline")  
   
   k1x <- stats::ts(Scaler(k1_31, Diff=Diff), frequency=31) # Log needs to be FALSE in any case, because its inherited from before
   
@@ -245,7 +253,7 @@ dsa <- function(series, span.start=NA, model=NULL, Log=FALSE, Diff=0, automodel=
 
   s2 <- drop31(s2, new_start=stats::start(k1)[2], new_end=stats::end(k1)[2]) 
   s2_complete <- s2
-  s2 <- xts2ts(s2, freq=365) 
+  s2 <- xts2ts(s2, freq=365) #  freq=365.2524
 
 
   
@@ -366,18 +374,12 @@ dsa <- function(series, span.start=NA, model=NULL, Log=FALSE, Diff=0, automodel=
 
   # Implicit seasonal factors
   sc_fac <- Descaler(o_fc_xts-s_final_xts, Log=Log, y=NA) * ifelse(Log, 100, 1); colnames(sc_fac) <- "seasonal factor"
+
   
-  # Correcting 29.2
-  #sc_fac
-  sc_fac[format(zoo::index(sc_fac), "%m-%d")=="02-29"] <- NA
-  sc_fac <- zoo::na.spline(sc_fac)
   # Seasonal Factors
-  
-  
-  
-  normSf <- function(x, Log) {x - mean(x, na.rm=TRUE) + ifelse(Log, 100, 0)}
+  normSf <- function(x, Log) {x - mean(x, na.rm=TRUE) + ifelse(Log, 1, 0)}
   original_desc <- Descaler(o_fc_xts, Log=Log, y=NA)
-  s1_fac <- normSf(Descaler(s1_fac, Log=Log, y=NA)* ifelse(Log, 100, 1), Log=Log); colnames(s1_fac) <- "s1_fac"
+  s1_fac <- normSf(Descaler(s1_fac, Log=Log, y=NA), Log=Log); colnames(s1_fac) <- "s1_fac"
   k1_fac <- normSf(Descaler(Scaler(original_desc, Log=Log) - Scaler(k1_only, Log=Log), Log=Log, y=NA), Log=Log)
   s2_fac <- normSf(Descaler(Scaler(original_desc, Log=Log) - Scaler(s2_only, Log=Log), Log=Log, y=NA), Log=Log)
   s3_fac <- normSf(Descaler(Scaler(original_desc, Log=Log) - Scaler(s3_only, Log=Log), Log=Log, y=NA), Log=Log)
@@ -388,7 +390,22 @@ dsa <- function(series, span.start=NA, model=NULL, Log=FALSE, Diff=0, automodel=
   original <- Descaler(o_fc_xts, Log=Log, y=NA); colnames(original) <- "original series"
   original <- original - as.numeric(utils::head(original, 1)) + ifelse(is.na(as.numeric(utils::head(Euro400,1))) , as.numeric(utils::head(original, 1)), as.numeric(utils::head(Euro400,1))) # Correction of the original series after several transformations to be equal to the original series
   final_sa <- Descaler(s_final_xts, Log=Log, y=NA); colnames(final_sa) <- "final sa series"
-  final_sa[format(zoo::index(sc_fac), "%m-%d")=="02-29"] <- Descaler(Scaler(original[format(zoo::index(sc_fac), "%m-%d")=="02-29"], Log=Log) - Scaler(sc_fac[format(zoo::index(sc_fac), "%m-%d")=="02-29"], Log=Log), Log=Log, y=NA) * ifelse(Log, 100, 1) 
+ 
+  # Correcting 29.2
+  if (feb29=="sfac" | feb29=="scfac" | feb29=="sc_fac") {
+    sc_fac[format(zoo::index(sc_fac), "%m-%d")=="02-29"] <- NA
+    sc_fac <- zoo::na.spline(sc_fac)
+    
+    final_sa[format(zoo::index(final_sa), "%m-%d")=="02-29"] <- Descaler(Scaler(original[format(zoo::index(original), "%m-%d")=="02-29"], Log=Log) - Scaler(sc_fac[format(zoo::index(sc_fac), "%m-%d")=="02-29"], Log=Log), Log=Log, y=NA) * ifelse(Log, 100, 1) 
+  }
+  
+  if (feb29=="sa") {
+    final_sa[format(zoo::index(final_sa), "%m-%d")=="02-29"] <- NA
+    final_sa <- zoo::na.spline(final_sa)
+    
+    sc_fac[format(zoo::index(sc_fac), "%m-%d")=="02-29"] <- Descaler(Scaler(original[format(zoo::index(original), "%m-%d")=="02-29"], Log=Log) - Scaler(final_sa[format(zoo::index(final_sa), "%m-%d")=="02-29"], Log=Log), Log=Log, y=NA)* ifelse(Log, 100, 1) 
+    
+  }
   
   trend <- Descaler(trend, Log=Log, y=NA); colnames(trend) <- "final trend series"
   
@@ -416,9 +433,13 @@ dsa <- function(series, span.start=NA, model=NULL, Log=FALSE, Diff=0, automodel=
     stl_3$time.series <- stl_3$time.series*scaler
   }  
   
-  sfac_result <- xts::merge.xts(s1_fac, k1_fac, s2_fac, s3_fac)
+  sfac_result <- xts::merge.xts(s1_fac, k1_fac, s2_fac, s3_fac) ;  colnames(sfac_result) <- c("sfac1", "cal_fac", "sfac2", "sfac3")
   
-  sa_result <- xts::merge.xts(s1_complete, k1_complete, s2_complete, final_sa);  colnames(sa_result) <- c("SA1", "cal_adj", "SA2", "SA3") # Die Ergebnisse der Zwischenschritte
+  sfac_result <<- sfac_result; original <<- original; final_sa <<- final_sa
+  sfac_result[format(zoo::index(sfac_result), "%m-%d")=="02-29", 2:3] <- 0
+  sfac_result[format(zoo::index(sfac_result), "%m-%d")=="02-29", 4] <- Descaler(Scaler(original[format(zoo::index(original), "%m-%d")=="02-29"], Log=Log) - Scaler(final_sa[format(zoo::index(final_sa), "%m-%d")=="02-29"], Log=Log) - Scaler(sfac_result[format(zoo::index(sfac_result), "%m-%d")=="02-29", 1], Log=Log), Log=Log, y=NA) #+ ifelse(Log, 1, 0)
+  
+  sa_result <- xts::merge.xts(s1_complete, k1_complete, s2_complete, final_sa);  colnames(sa_result) <- c("SA1", "cal_adj", "SA2", "SA3") # The results of the intermediate steps
   
   sa_result2 <- xts::merge.xts(s1_only, k1_only, s2_only, s3_only);  colnames(sa_result2) <- c("onlyS1", "onlyCal", "onlyS2", "onlyS3")
 

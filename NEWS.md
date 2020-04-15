@@ -1,10 +1,40 @@
-dsa v0.70.1 (Release date: 2019-04-04
+dsa v073.5 (Release date: 2020-03-05)
+==============
+Changes:
+	- Bug fix: Now multiple external regressors can be added correctly
+
+dsa v073.5 (Release date: 2020-03-05)
 ==============
 Changes: 
-- Bug fixes:  - Some minor code clean-up
+	- fixed bug in xts2ts for leapyears
+
+dsa v073.3 (Release date: 2020-01-20)
+==============
+Changes: 
+	- dow_dummy now has an option delete 29_2 to make it possible to delete the values for the 29th of February
+	- Improved treatment of 29th February
+
+
+dsa v0.72.1 (Release date: 2019-11-01)
+==============
+Changes: 
+	- In drop31, more iterations are allowed, to find the correct length of the dates for the new variables
+
+
+
+dsa v0.71.6 (Release date: 2019-10-10)
+==============
+Changes: 
+	- In output: for the graphics cairo-png is no longer used, as on some devices it does not create graphics
+
+
+dsa v0.70.1 (Release date: 2019-04-04)
+==============
+Changes: 
+	- Bug fixes:  - Some minor code clean-up
 
 Additional Functionality:
-- get_sa, get_trend, get_original: Inclusion of easy function to quickly get the most important series from the seasonal adjustment
+	- get_sa, get_trend, get_original: Inclusion of helper function to quickly get the most important series from the seasonal adjustment
 
 
 

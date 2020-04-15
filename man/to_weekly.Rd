@@ -4,8 +4,7 @@
 \alias{to_weekly}
 \title{Change a daily to a weekly differenced time series}
 \usage{
-to_weekly(x, incl_forecast = T, forecast_length = 365, diff = T,
-  dayofweek = 5)
+to_weekly(x, incl_forecast = T, forecast_length = 365, diff = T, dayofweek = 5)
 }
 \arguments{
 \item{x}{input series}

@@ -4,9 +4,20 @@
 \alias{output}
 \title{Creating Output for dsa}
 \usage{
-output(daily.object, path = getwd(), short = FALSE, SI = TRUE,
-  SI365.seed = 3, spec = TRUE, outlier = TRUE, Factor = "auto",
-  everyDay = TRUE, seasonals = FALSE, progressBar = TRUE)
+output(
+  daily.object,
+  path = getwd(),
+  short = FALSE,
+  SI = TRUE,
+  SI365.seed = 3,
+  spec = TRUE,
+  outlier = TRUE,
+  Factor = "auto",
+  everyDay = TRUE,
+  seasonals = FALSE,
+  spectrum_linesize = 0.5,
+  progressBar = TRUE
+)
 }
 \arguments{
 \item{daily.object}{output of dsa() function}
@@ -28,6 +39,8 @@ output(daily.object, path = getwd(), short = FALSE, SI = TRUE,
 \item{everyDay}{Boolean. Inclusion of table that summarizes daily results}
 
 \item{seasonals}{Boolean. Plots of seasonal factors as interactive instead of static graph.}
+
+\item{spectrum_linesize}{Width of lines in spectrum.}
 
 \item{progressBar}{Should a progress bar be displayed?}
 }

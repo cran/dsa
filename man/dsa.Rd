@@ -4,15 +4,40 @@
 \alias{dsa}
 \title{Seasonally Adjust Daily Time Series}
 \usage{
-dsa(series, span.start = NA, model = NULL, Log = FALSE, Diff = 0,
-  automodel = "reduced", ic = "bic", fourier_number = NA,
-  s.window1 = 151, s.window2 = 51, s.window3 = 15, t.window1 = NULL,
-  t.window2 = NULL, t.window3 = NULL, cval = 7, robust1 = TRUE,
-  robust2 = TRUE, robust3 = TRUE, regressor = NULL,
-  forecast_regressor = NULL, reg.create = NULL, reg.dummy = NULL,
-  outlier.types = c("AO", "LS", "TC"), modelspan = NULL, trend_month = 3,
-  outer3 = NULL, inner3 = NULL, h = 365, reiterate3 = NULL,
-  scaler = 1e+07, progressBar = TRUE)
+dsa(
+  series,
+  span.start = NA,
+  model = NULL,
+  Log = FALSE,
+  Diff = 0,
+  automodel = "reduced",
+  ic = "bic",
+  fourier_number = NA,
+  s.window1 = 151,
+  s.window2 = 51,
+  s.window3 = 15,
+  t.window1 = NULL,
+  t.window2 = NULL,
+  t.window3 = NULL,
+  cval = 7,
+  robust1 = TRUE,
+  robust2 = TRUE,
+  robust3 = TRUE,
+  regressor = NULL,
+  forecast_regressor = NULL,
+  reg.create = NULL,
+  reg.dummy = NULL,
+  outlier.types = c("AO", "LS", "TC"),
+  modelspan = NULL,
+  feb29 = "sfac",
+  trend_month = 3,
+  outer3 = NULL,
+  inner3 = NULL,
+  h = 365,
+  reiterate3 = NULL,
+  scaler = 1e+07,
+  progressBar = TRUE
+)
 }
 \arguments{
 \item{series}{Input time series in xts format}
@@ -62,6 +87,8 @@ dsa(series, span.start = NA, model = NULL, Log = FALSE, Diff = 0,
 \item{outlier.types}{The following are possible: "LS", "TC", "AO", "IO"}
 
 \item{modelspan}{Last x years used for regARIMA modelling.}
+
+\item{feb29}{How should February 29th be derived: interpolation of adjusted series ("sa") or combined factor ("sfac")?}
 
 \item{trend_month}{Length of support period for trend estimation}
 

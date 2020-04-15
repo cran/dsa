@@ -36,6 +36,7 @@ holidays <- holidays
 iter <- 0
 fo <- number.fourier
 n <- length(series)
+xreg_new <- NULL
 
 while(iter < maxit.oloop)
 {
@@ -50,7 +51,7 @@ moall <- rbind(moall, mo.iloop)
 oeff <- tsoutliers::outliers.effects(mo.iloop, n, weights=TRUE, pars=pars)
 y.oloop <- y.oloop - rowSums(oeff)
 
-if (!is.null(holidays)) {fit.oloop <- forecast::Arima(y.oloop, order=model$arma[c(1,6,2)], xreg=cbind(forecast::fourier(series, fo), holidays), method="ML", include.drift=T)} else {fit.oloop <- forecast::Arima(y.oloop, order=model$arma[c(1,6,2)], xreg=cbind(forecast::fourier(series, fo)), method="ML", include.drift=T)}
+if (!is.null(holidays)) {fit.oloop <- forecast::Arima(y.oloop, order=model$arma[c(1,6,2)], xreg=cbind(stats::ts(forecast::fourier(series, fo), frequency=stats::frequency(series), start=stats::start(series)), holidays), method="ML", include.drift=T)} else {fit.oloop <- forecast::Arima(y.oloop, order=model$arma[c(1,6,2)], xreg=cbind(forecast::fourier(series, fo)), method="ML", include.drift=T)}
 
 iter <- iter+1
 }
@@ -68,8 +69,8 @@ y <- series
 while(TRUE) {
 
 if (!is.null(holidays))  {
-  fit <- tryCatch(forecast::Arima(y.oloop, order=model$arma[c(1,6,2)], xreg=cbind(xreg_new , forecast::fourier(series, fo), holidays), method="ML", include.drift=T))
-  if(inherits(fit, "error")) { fit <- forecast::Arima(y.oloop, order=model$arma[c(1,6,2)], xreg=cbind(xreg_new , forecast::fourier(series, fo), holidays), method="CSS-ML", include.drift=T) }
+  fit <- tryCatch(forecast::Arima(y.oloop, order=model$arma[c(1,6,2)], xreg=cbind(stats::ts(forecast::fourier(series, fo), frequency=stats::frequency(series), start=stats::start(series)), holidays), method="ML", include.drift=T))
+  if(inherits(fit, "error")) { fit <- forecast::Arima(y.oloop, order=model$arma[c(1,6,2)], xreg=cbind(stats::ts(forecast::fourier(series, fo), frequency=stats::frequency(series), start=stats::start(series)), holidays), method="CSS-ML", include.drift=T) }
   } else {
   fit <- tryCatch(forecast::Arima(y, order=c(model$arma[1],model$arma[6],model$arma[2]), xreg=cbind(xreg_new , forecast::fourier(series, fo)), method="ML", include.drift=T), error=function(e) e)
   if(inherits(fit, "error")) { fit <- tryCatch(forecast::Arima(y, order=c(model$arma[1],model$arma[6],model$arma[2]), xreg=cbind(xreg_new , forecast::fourier(series, fo)), method="CSS-ML", include.drift=T), error=function(e) e)   }

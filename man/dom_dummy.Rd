@@ -4,8 +4,7 @@
 \alias{dom_dummy}
 \title{Dummy for the Day of the Month}
 \usage{
-dom_dummy(day = "01", start = "2010/1/1", end = "2015/01/01",
-  delete29 = T)
+dom_dummy(day = "01", start = "2010/1/1", end = "2015/01/01", delete29 = T)
 }
 \arguments{
 \item{day}{Day of the Month for which dummy is created}

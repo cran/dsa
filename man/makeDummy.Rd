@@ -4,8 +4,14 @@
 \alias{makeDummy}
 \title{Creating set of dummy variables for specified Holidays}
 \usage{
-makeDummy(holidays = NULL, from = -5, to = 5, h = 365, original = NA,
-  original2 = NA)
+makeDummy(
+  holidays = NULL,
+  from = -5,
+  to = 5,
+  h = 365,
+  original = NA,
+  original2 = NA
+)
 }
 \arguments{
 \item{holidays}{holidays for which dummy variables will be created}
