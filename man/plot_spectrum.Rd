@@ -4,7 +4,13 @@
 \alias{plot_spectrum}
 \title{Plot the periodogram of a daily time series}
 \usage{
-plot_spectrum(x, xlog = FALSE, size = 1)
+plot_spectrum(
+  x,
+  xlog = FALSE,
+  size = 1,
+  color = "black",
+  vline_color = "#6F87B2"
+)
 }
 \arguments{
 \item{x}{xts or ts, daily timeseries}
@@ -12,6 +18,10 @@ plot_spectrum(x, xlog = FALSE, size = 1)
 \item{xlog}{should x-axis be log transformed}
 
 \item{size}{linesize}
+
+\item{color}{color of line}
+
+\item{vline_color}{color of vertical lines}
 }
 \description{
 Plot the periodogram of a daily time series

@@ -1,13 +1,13 @@
-#' Invert taking logs and differences of  a time series
+#' Invert taking logs and differences of a time series
 #' 
-#' For a series that has been logged and/or differences, this function reverses these transformations.
+#' For a series that has been logged and/or differenced, this function reverses these transformations.
 #' @param x time series
 #' @param y time series used as benchmark
 #' @param Diff number of differences to be taken
 #' @param Sdiff number of seasonal differences to be taken
 #' @param Log Should time series be logarithmised
 #' @param Lag Lag for Sdiff can be specified
-#' @details The time series used as a benchmark (y) is necessary, if regular or seasonal differences have to be inversed, because the first values of this series is used to reconstruct the original values or benchmark the new series.
+#' @details The time series used as a benchmark (y) is necessary, if regular or seasonal differences have to be inversed, because the first values of this series are used to reconstruct the original values or benchmark the new series.
 #' @author Daniel Ollech
 #' @examples a = ts(rnorm(100, 100, 10), start=c(2015,1), frequency=12)
 #' b = Scaler(a, Diff=1, Log=TRUE)

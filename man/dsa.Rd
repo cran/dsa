@@ -6,16 +6,17 @@
 \usage{
 dsa(
   series,
-  span.start = NA,
+  span.start = NULL,
   model = NULL,
   Log = FALSE,
-  Diff = 0,
   automodel = "reduced",
   ic = "bic",
-  fourier_number = NA,
-  s.window1 = 151,
-  s.window2 = 51,
-  s.window3 = 15,
+  include.constant = FALSE,
+  fourier_number = 24,
+  max_fourier = 30,
+  s.window1 = 53,
+  s.window2 = 53,
+  s.window3 = 13,
   t.window1 = NULL,
   t.window2 = NULL,
   t.window3 = NULL,
@@ -25,10 +26,12 @@ dsa(
   robust3 = TRUE,
   regressor = NULL,
   forecast_regressor = NULL,
-  reg.create = NULL,
-  reg.dummy = NULL,
-  outlier.types = c("AO", "LS", "TC"),
-  modelspan = NULL,
+  reg_create = NULL,
+  reg_dummy = NULL,
+  outlier = TRUE,
+  outlier_types = c("AO", "LS", "TC"),
+  delta = 0.7,
+  model_span = NULL,
   feb29 = "sfac",
   trend_month = 3,
   outer3 = NULL,
@@ -36,7 +39,8 @@ dsa(
   h = 365,
   reiterate3 = NULL,
   scaler = 1e+07,
-  progressBar = TRUE
+  mean_correction = TRUE,
+  progress_bar = TRUE
 )
 }
 \arguments{
@@ -46,15 +50,17 @@ dsa(
 
 \item{model}{ARIMA order of non-seasonal part}
 
-\item{Log}{Boolean. Should multiplicate or additive model be used?}
+\item{Log}{Boolean. Should multiplicate or additive model be used}
 
-\item{Diff}{Number of differences taken before STL is run.}
-
-\item{automodel}{Set of models to be considered for automatic model detection. Either "full" or "reduced" set of fourier regressors included.}
+\item{automodel}{Set of models to be considered for automatic model detection. Either "full" or "reduced" set of fourier regressors included}
 
 \item{ic}{Information criterion that is used for automodelling. One of "bic", "aic" or "aicc"}
 
+\item{include.constant}{Should drift be allowed for model that includes differencing}
+
 \item{fourier_number}{Number of trigometric regressors to model annual and monthly seasonality}
+
+\item{max_fourier}{Maximum number of trigonometric regressors allowed if the number is selected automatically, i.e. fourier_number=NULL}
 
 \item{s.window1}{STL parameter s.window for the day of the week effect}
 
@@ -80,15 +86,19 @@ dsa(
 
 \item{forecast_regressor}{Pre-specified regressors to be used for forecasting}
 
-\item{reg.create}{Names of Holidays for which regressors will be created}
+\item{reg_create}{Names of Holidays for which regressors will be created}
 
-\item{reg.dummy}{If specified dummy variables of specified length are created and used as regressors}
+\item{reg_dummy}{If specified dummy variables of specified length are created and used as regressors}
 
-\item{outlier.types}{The following are possible: "LS", "TC", "AO", "IO"}
+\item{outlier}{Should an outlier adjustment be conducted?}
 
-\item{modelspan}{Last x years used for regARIMA modelling.}
+\item{outlier_types}{The following are possible: "LS", "TC", "AO", "IO"}
 
-\item{feb29}{How should February 29th be derived: interpolation of adjusted series ("sa") or combined factor ("sfac")?}
+\item{delta}{The decay rate for TC outliers}
+
+\item{model_span}{Last x years used for regARIMA modelling}
+
+\item{feb29}{How should February 29th be derived: interpolation of adjusted series ("sa") or combined factor ("sfac")}
 
 \item{trend_month}{Length of support period for trend estimation}
 
@@ -102,20 +112,51 @@ dsa(
 
 \item{scaler}{for additive model, if max(abs(series)) > 1e5, scale series}
 
-\item{progressBar}{Should a progress bar be displayed?}
+\item{mean_correction}{Boolean. Should seasonal factors be standardised so that their mean (over all full cycles) is 0 for additive and 1 for multiplicative models}
+
+\item{progress_bar}{Boolean. Should a progress bar be displayed}
+}
+\value{
+\code{dsa} returns a \code{daily} object which contains the output of the seasonal adjustment of a daily time series.
+
+{output} {Contains the calendar and seasonally adjusted series, original series, implicit calendar and seasonal component, and Loess based trend as an \code{xts} object}
+
+{fourier_terms} {The number of sine and cosine terms used to model the seasonal pattern in the RegARIMA model}
+
+{reg} {RegARIMA results}
+
+{info} {Basic information on transformation (Log/Level), differencing and forecast horizon}
+
+{stl} {A list of length 3, containing the STL results of the day-of-week, day-of-the-month and day-of-the-year adjustment, respectively}
+
+{outlier} {Result of the outlier adjustment}
+
+{sa_result} {The original series and the intermediate adjustment results after the day-of-week adjustment (s1_adjusted), calendar adjustment (s1k1_adjusted), day-of-the-month adjustment (s1k1s2_adjusted), and the final adjusted series after the day-of-the-year adjustment (seas_adj) as an \code{xts} object}
+
+{sa_result2} {The original series only adjusted for single components as an \code{xts} object. Namely the original series itself (original), the original only adjusted for the day-of-the week (s1_adjusted), calendar (k1_adjusted), day-of-the-month (s2_adjusted), and day-of-the-year (s3_adjusted)}
+
+{sfac_result} {The seasonal and calendar components as an \code{xts} object. Namely, the day-of-the-week (s1_fac), calendar (cal_fac), day-of-the-month (s2_fac), and day-of-the-year component (s3_fac) }
 }
 \description{
 Seasonally adjust daily time series using the dsa approach
 }
 \details{
-This function can be used to seasonally and calendar adjust daily time series using multiplicative model.
+This function can be used to seasonally and calendar adjust daily time series and decomposing the series into a seasonally adjusted series, a day-of-the-week, a moving holiday, a day-of-the-month and a day-of-the-year component.
+
+If mean_correction=TRUE (default), the seasonal and calendar factors are corrected, so that over all full years, the mean of the components is 0 in additive models. They will be close to 1 if a multiplicative decomposition (i.e. Log=TRUE) is used. Deviations from 1 may result, because the mean correction is applied to the components before inverting taking logs.
+
+For long series, the ARIMA modelling and the outlier adjustment may take a long time. It may therefore be a good idea, to specify the ARIMA model used, e.g. model=c(3,1,0). If the series does not contain influential outliers, the outlier adjustment could be skipped by setting outlier=FALSE.
+
+See vignette for further examples.
 }
 \examples{
 x = daily_sim(n=4)$original # series with length 4 years
-res <- dsa(x, cval=7, model=c(3,1,0),fourier_number = 13, reg.create=NULL) 
+res <- dsa(x, cval=7, model=c(3,1,0),fourier_number = 13)
 }
 \references{
 Ollech, Daniel (2018). Seasonal adjustment of daily time series. Bundesbank Discussion Paper 41/2018.
+
+Ollech, Daniel (2021). Seasonal Adjustment of Daily Time Series. Journal of Time Series Econometrics (forthcoming).
 }
 \author{
 Daniel Ollech

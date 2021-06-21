@@ -23,8 +23,7 @@ xtsplot(
   WeekOfYear = F,
   date_breaks = NA,
   date_labels = NA,
-  submain = NULL,
-  font = NA
+  submain = NULL
 )
 }
 \arguments{
@@ -65,25 +64,21 @@ xtsplot(
 \item{date_labels}{format of the date label for x-axis}
 
 \item{submain}{subtitle of the plot}
-
-\item{font}{font to be used}
 }
 \description{
 Creates a plot using an xts series
 }
 \details{
-This function uses the ggplot2 package. 
+This function uses the ggplot2 package.
 The difference between type="bar" and type="bar2" is that the former produces barcharts with bars of the second series in front of the bars of the first series (and accordingly for more than two series), while "bar2" creates side-by-side barcharts.
 If a scale is supplied, the data will be divided by this number.
 }
 \examples{
 x <- xts::xts(rnorm(100), seq.Date(as.Date("2010-01-01"), length.out=100, by="months"))
 y <- xts::xts(runif(100), seq.Date(as.Date("2010-01-01"), length.out=100, by="months"))
-xtsplot(x, font="sans")
-xtsplot(y, transform="diff", type="bar", font="sans")
-xtsplot(y, font="sans")
-xtsplot(y, transform="diff", type="bar", date_breaks="24 months", font="sans")
-xtsplot(merge(x,y), names=c("Gaussian", "Uniform"), main="Simulated series", font="sans")
+xtsplot(y, transform="diff", type="bar")
+xtsplot(y, transform="diff", type="bar", date_breaks="24 months")
+xtsplot(merge(x,y), names=c("Gaussian", "Uniform"), main="Simulated series")
 }
 \author{
 Daniel Ollech

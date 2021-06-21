@@ -5,7 +5,7 @@
 \title{Creating Output for dsa}
 \usage{
 output(
-  daily.object,
+  daily_object,
   path = getwd(),
   short = FALSE,
   SI = TRUE,
@@ -13,14 +13,15 @@ output(
   spec = TRUE,
   outlier = TRUE,
   Factor = "auto",
-  everyDay = TRUE,
+  every_day = TRUE,
   seasonals = FALSE,
   spectrum_linesize = 0.5,
-  progressBar = TRUE
+  seasonality_tests = TRUE,
+  progress_bar = TRUE
 )
 }
 \arguments{
-\item{daily.object}{output of dsa() function}
+\item{daily_object}{output of dsa() function}
 
 \item{path}{Path that HTML file is written to}
 
@@ -36,13 +37,15 @@ output(
 
 \item{Factor}{Scaling factor for series with large values}
 
-\item{everyDay}{Boolean. Inclusion of table that summarizes daily results}
+\item{every_day}{Boolean. Inclusion of table that summarizes daily results}
 
-\item{seasonals}{Boolean. Plots of seasonal factors as interactive instead of static graph.}
+\item{seasonals}{Boolean. Plots of seasonal factors as interactive instead of static graph}
 
-\item{spectrum_linesize}{Width of lines in spectrum.}
+\item{spectrum_linesize}{Width of lines in spectrum}
 
-\item{progressBar}{Should a progress bar be displayed?}
+\item{seasonality_tests}{Boolean. Inclusion of seasonality tests}
+
+\item{progress_bar}{Should a progress bar be displayed?}
 }
 \description{
 This function creates HTML output in a specified folder for objects of class daily
@@ -51,7 +54,7 @@ This function creates HTML output in a specified folder for objects of class dai
 This function can be used to create plots and tables necessary for the analysis of seasonally and calendar adjusted daily time series. Uses the output of dsa() as an input.
 }
 \examples{
-res <- dsa(daily_sim(4)$original, cval=7, model=c(3,1,0),fourier_number = 13, reg.create=NULL)
+res <- dsa(daily_sim(4)$original, cval=7, model=c(3,1,0),fourier_number = 13)
 \dontrun{output(res)}
 }
 \author{

@@ -1,0 +1,479 @@
+---
+title: "dsa-vignette"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{dsa-vignette}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r}
+library(dsa)
+```
+
+## Daily Seasonal Adjustment
+The dsa package includes functions to seasonally adjust time series with daily observations. Daily time series typically are influenced by three different periodic effects along with the impact of moving holidays. For example, the currency in circulation is influenced by a weekday effect as the demand for banknotes increases towards the weekend.  Monthly recurring troughs and peaks can often be observed, because salary payments tend to be concentrated around the turn of the month. Due to an increase in consumption the demand for currency reaches its high around Christmas time. In addition to these seasonal influences, the currency in circulation is positively impacted by Easter and other public holidays whose date changes from year to year. Daily time series are therefore often modelled as:
+$Y_t = T_t + S^{(7)}_t +S^{(31)}_t + S^{(365)}_t + C_t + I_t.$
+
+It is further possible, that these effects are interacting. The time series model can then be extended accordingly, e.g.
+$Y_t = T_t + S^{(7)}_t + S^{(31)}_t + S^{(365)}_t + C_t +  S^{(7)}_t \times S^{(365)}_t + I_t.$
+
+The procedure for daily calendar and seasonal adjustment (DSA) made available here combines a local regression based iterative seasonal adjustment routine (STL) with a time series regression model for the estimation of moving holiday, cross-seasonal and outlier effects.
+
+The most important parameter to be set in STL is the s.window parameter i.e. $\gamma_{S^{(frequency)}}$. It determines the stability of the estimated seasonal component. Thus, the higher the parameter, the more stable the estimated seasonal influence.
+
+Details on the procedure can be found in Ollech (2018, 2021).
+
+
+## Quickstart
+
+We simulate a seasonal daily time series using the **daily_sim()** function and afterwards seasonally adjust that series using the **dsa()** function. Also, we include dummies for Easter, ranging from 3 days before to 4 days after Easter. The inclusion of these regressors is just for illustrative purposes, the simulated series does not contain Easter effects.
+
+```{r, eval=TRUE}
+set.seed(5)
+x = dsa::daily_sim(5)$original
+res <- dsa(x,  
+           reg_create="Easter", reg_dummy=c(-3,4), 
+           progress_bar = FALSE) 
+```
+
+To output the results, it is possible to create an HTML file that contains the most important results and visualisations.
+
+```{r, eval=FALSE}
+output(res)
+```
+
+It is also possible, to work with the data directly and to use **xtsplot()** or **plot()** to plot the results.
+
+```{r, fig.width=7.5, fig.height=4.5}
+plot(res, main="Results of Daily Seasonal Adjustment")
+```
+  
+  
+
+## Extensive examples
+
+The following examples are taken from Ollech (2021). In that paper, dsa version 0.74.18 was used. Thus, differences between the results presented here and in this paper stem from differences in the version used.
+Most importantly, the following results will show, how the calendar adjustment can be set up, without using the built-in regressor-creating functions in dsa. This is especially helpful, if interactions between components need to be modelled. We also include results obtained from applying TBATS and STR.
+
+### Example: Currency in circulation
+
+The currency in circulation is calculated as the cumulated differences of cash outflows from and inflows to the Bundesbank. The distribution of banknotes to the public runs primarily through commercial banks. The series' trend is closely related to nominal GDP, but is also marked by periodical influences. 
+
+For the moving holiday effects of the currency in circulation we include four days before to one day after Easter Monday as well as the day before Ascension and Pentecost Monday. 
+
+For the computation of the intra-monthly seasonal factors the length of the seasonal Loess regression $\gamma_{S^{(31)}} := 41$ and the robust version of STL is used. Again, this takes into account the high stability of this periodic pattern over time.
+
+For the intra-yearly seasonal factor, the non-robust version of STL is used and the Loess parameter for the seasonal factor $\gamma_{S^{(365)}}:=21$. With only a few years of observations available, the outer loop of STL can sometimes tend to overcorrect seemingly extreme observations. Then it is preferable to use the non-robust version of STL, especially if the seasonal component proves to be stable and a relatively high value of $\gamma_{S^{(365)}}$ is used.
+
+```{r, eval=FALSE}
+currency_in_circulation <- zoo::na.locf(zoo::na.locf(daily_data$currency_circulation))
+
+reference_series <- currency_in_circulation
+restrict <- seq.Date(from=stats::start(reference_series), 
+                     to=stats::end(reference_series), by="days")
+restrict_forecast <- seq.Date(from=stats::end(reference_series)+1,
+                              length.out=365, by="days")
+
+AllHol <- merge(lag(holidays$GoodFriday, -2), lag(holidays$GoodFriday, -1), 
+                holidays[, c("GoodFriday")], lag(holidays$GoodFriday, 1), 
+                holidays[, c("EasterSunday", "EasterMonday", "EasterMondayAft1Day")],
+                holidays$AscensionBef1Day, holidays$PentecostMonday) 
+colnames(AllHol) <- c("GoodFriday-2", "GoodFriday-1", "GoodFriday", 
+                      "GoodSaturday", "EasterSunday", "EasterMonday", 
+                      "EasterMondayAft1Day", "AscensionBef1Day", 
+                      "PentecostMonday")
+
+AllHolUse <- multi_xts2ts(AllHol[restrict])
+AllHolForecast <- multi_xts2ts(AllHol[restrict_forecast], short=TRUE)
+AllHolForecast <- AllHolForecast[,colSums(AllHolUse)!=0]
+AllHolUse <- AllHolUse[,colSums(AllHolUse)!=0]
+
+# Adjustment with DSA
+cic_sa <- dsa(currency_in_circulation, Log=FALSE, 
+              robust1=T, robust3=F, 
+              s.window1=53, s.window2=41, s.window3=21, 
+              cval=7.0, model_span=3,
+              fourier_number=24, 
+              regressor=AllHolUse, forecast_regressor = AllHolForecast,  
+              reiterate3=7, 
+              feb29="sa", 
+              progress_bar = FALSE)
+
+```
+
+```{r}
+# Workaround to reduce the compilation time for CRAN. Results obtained from dsa() using the specification above.
+cic_sa <- dsa_examples[[1]]
+dsa_out <- get_sa(cic_sa)
+```
+
+
+We can of course plot the final results and the seasonal and calendar components.
+
+```{r, fig.width=7.5, fig.height=7.5, eval=TRUE}
+
+g1 <- xtsplot(cic_sa$output[,c(2,1)]["2018/2020-05"], 
+              color=c("#9c9e9f", "darkred"), 
+              main="Original and Seasonally adjusted series", 
+              names=c("Original", "Adjusted")) + 
+  ggplot2::theme(legend.position = c(0.175, 0.775))
+g2 <- xtsplot(cic_sa$sfac_result[,1]["2018/2020-05"], 
+              color="#0062a1", 
+              main="Intra-weekly seasonal component", 
+              linesize=0.3) + 
+  ggplot2::theme(legend.position = "None")
+g3 <- xtsplot(cic_sa$sfac_result[,2]["2018/2020-05"], 
+              color="#0062a1", 
+              main="Moving holiday effect") + 
+  ggplot2::theme(legend.position = "None")
+g4 <- xtsplot(cic_sa$sfac_result[,3]["2018/2020-05"], 
+              color="#0062a1", 
+              main="Intra-monthly seasonal component") + 
+  ggplot2::theme(legend.position = "None")
+g5 <- xtsplot(cic_sa$sfac_result[,4]["2018/2020-05"], 
+              color="#0062a1", 
+              main="Intra-annual seasonal component") + 
+  ggplot2::theme(legend.position = "None")
+gridExtra::grid.arrange(g1, g2, g3, g4, g5, nrow=5)
+```
+
+
+
+
+
+Regression results are contained in cic_sa$reg. Below we shot the results for the moving holiday effects. Note that dimension has been changed so that it is million Euros.
+```{r, fig.width=7.5, fig.height=4.5, eval=TRUE}
+knitr::kable(round(data.frame(Estimate=cic_sa$reg$coef, 
+                              SE=sqrt(diag(cic_sa$reg$var.coef)))[51:59,]*1000,1))
+```
+
+To assess the quality of the seasonal adjustment, we can investigate the spectrum of the series. The {dsa} package includes the function **plot_spectrum()**, that indicates the day-of-the-month influences (12 and 24 cycles per year) and day-of-the-week influences (52.1, 104.3 and 156.4 cycles per year) using vertical lines.
+
+```{r, fig.width=7.5, fig.height=4.5, eval=TRUE}
+g1 <- plot_spectrum(cic_sa$output$original, color="darkred") + 
+  ggplot2::ggtitle("Differenced original series") + 
+  ggplot2::theme(axis.text.x = ggplot2::element_blank(), 
+                 axis.title.x = ggplot2::element_blank())
+
+g2 <- plot_spectrum(cic_sa$output$seas_adj, color="darkred") + 
+  ggplot2::ggtitle("Differenced seasonally and calendar adjusted series")
+
+gridExtra::grid.arrange(g1, g2)
+```
+
+
+
+
+
+
+
+
+
+The table below contains both the test statistic as well as the corresponding p-value for the Friedman and QS test for the German currency in circulation. As we have seen before, the unadjusted series shows stable seasonal patterns with a low amplitude together with low volatility. The seasonality tests can identify a day-of-the-year and a day-of-the-week effect in the original series, with the notable exception of the QS test that fails to detect the intra-yearly seasonality in the daily time series.
+Using the DSA procedure, no residual seasonality can be detected. The significant result for the Friedman test on weekday-effects for the whole series proves to be a consequence of the large number of weeks investigated, as there is no residual weekday-effects in any single year. In general, the results of DSA, TBATS and STR are quite similar for the currency in circulation (only shown in Ollech (2021), as the results of TBATS and STR take too much time to compute. Results can be obtain from the author). Yet, the tests indicate residual seasonality for both intra-yearly and weekday effects and visual inspection of the adjusted series shows that STR does not pick up on a level shift in the trend in the last weeks of the series, i.e. week 12 and 13 in 2020.
+
+
+
+
+```{r, fig.width=7.5, fig.height=4.5}
+### Set of functions to output the seasonality tests neatly.
+
+set_of_seastests <- function(x) {
+fried365 <- seastests::fried(dsa::xts2ts(x, 365), freq=365)  
+qs365 <- seastests::qs(dsa::xts2ts(x, 365), freq=365) 
+fried12 <- seastests::fried(dsa:::.to_month(x), freq=12)
+qs12 <- seastests::qs(dsa:::.to_month(x), freq=12)
+fried7 <- seastests::fried(xts::last(x,70), freq=7)
+qs7 <- seastests::qs(xts::last(x,70), freq=7)
+fried7_all <- seastests::fried(x, freq=7)
+qs7_all <- seastests::qs(x, freq=7)
+
+stats <- round(c(fried365$stat, qs365$stat, fried12$stat, qs12$stat, 
+                 fried7$stat, qs7$stat, fried7_all$stat, qs7_all$stat),1)
+
+pvals <- round(c(fried365$Pval, qs365$Pval, fried12$Pval, qs12$Pval, 
+                 fried7$Pval, qs7$Pval, fried7_all$Pval, qs7_all$Pval),3)
+
+out <- cbind(stats, pvals)
+rownames(out) <- c("Friedman365", "QS365", "Friedman12", "QS12", 
+                   "Friedman7", "QS7", "Friedman7all", "QS7all")
+colnames(out) <- c("Teststat", "P-value")
+return(out)
+}
+
+all_seas <- function(x, ...) {
+  if (missing(...)) {
+    bc <- x
+  } else {
+    bc <- list(x, ...)
+  }
+  
+  out <- set_of_seastests(bc[[1]])
+  if (length(bc)>1) {
+    for (j in 2:length(bc)) {
+      out <- cbind(out, set_of_seastests(bc[[j]]))
+    }
+  }
+  return(out)
+}
+```
+
+
+```{r, fig.width=7.5, fig.height=4.5}
+knitr::kable(all_seas(zoo::na.locf(daily_data$currency_circulation), dsa_out))
+```
+
+### Example: Air quality 
+
+An important indicator for air pollution is the nitrogen dioxide (NO2) immissions averaged over all available measuring stations in Europe that are made available by the European Environment Agency (EEA). The series is more volatile than the other examples and quite short, starting in January, 2016, so that 4.5 years of observations are available. The series is characterised by a strong and regular day-of-the-week effect and a sinus like annual pattern. Balancing the volatility of the series and the  dominance of the weekday pattern, $\gamma_{S^{(7)}}:= 31$, while $\gamma_{S^{(365)}}:= 13$. As there is no indication of day-of-the-month effect, this step in the DSA procedure is omitted. For the estimation of calendar effects, all moving holidays related to Easter that are common in most countries in Europe are considered. This includes Good Friday, Easter Monday, Ascension, Corpus Christi and Pentecost Monday. Easter and Pentecost Sunday do not show significant results, most likely because their impact is indistinguishably similar to that of any other Sunday. Given the simplicity of the annual seasonal pattern, only 1x2 trigonometric terms need to be included in the RegARIMA model.
+
+
+```{r, fig.width=7.5, fig.height=4.5, eval=FALSE}
+no2 <- daily_data$no2
+no2 <- no2[!is.na(no2)]
+
+# Interpolation
+no2_NA <- xts::xts(as.numeric(ts(no2, frequency=7)), zoo::index(no2))
+no2_spline <- xts::xts(as.numeric(zoo::na.spline(ts(no2, frequency=7))), zoo::index(no2))
+no2 <- xts::xts(as.numeric(forecast::na.interp(ts(no2, frequency=7))), zoo::index(no2))
+
+# Regressors 
+reference_series <- no2
+restrict <- seq.Date(from=stats::start(reference_series), 
+                     to=stats::end(reference_series), by="days")
+restrict_forecast <- seq.Date(from=stats::end(reference_series)+1,
+                              length.out=365, by="days")
+
+XmasPeriodWeekday=del_names(holidays$XmasPeriodMon+holidays$XmasPeriodTue+
+                              holidays$XmasPeriodWed+holidays$XmasPeriodThu+
+                              holidays$XmasPeriodFri)
+
+AllHol <- merge(holidays[, c("GoodFriday", "EasterMonday", 
+                             "Ascension", "CorpusChristi", 
+                             "PentecostMonday")]) 
+AllHolUse <- multi_xts2ts(AllHol[restrict])
+AllHolForecast <- multi_xts2ts(AllHol[restrict_forecast], short=TRUE)
+AllHolForecast <- AllHolForecast[,colSums(AllHolUse)!=0]
+AllHolUse <- AllHolUse[,colSums(AllHolUse)!=0]
+
+# Adjustment with DSA
+no2_sa <- dsa(no2, Log=FALSE, s.window1 = 31, s.window2 = NULL, s.window3 = 13, 
+              fourier_number = 1, regressor=AllHolUse, 
+              forecast_regressor = AllHolForecast, 
+              robust3=FALSE, feb29="sfac", progress_bar = FALSE)
+```
+
+```{r}
+# Workaround to reduce the compilation time for CRAN. Results obtained from dsa() using the specification above.
+no2_sa <- dsa_examples[[3]]
+dsa_no2_out <- get_sa(no2_sa)
+```
+
+```{r, fig.width=7.5, fig.height=4.5, eval=TRUE}
+suppressPackageStartupMessages(library(stR, quietly=TRUE))
+suppressPackageStartupMessages(library(forecast, quietly=TRUE))
+# STR
+no2_cal <- zoo::na.approx(no2_sa$sa_result2$k1_adjusted[zoo::index(na.omit(daily_data$no2))])
+
+deTot_msts <- msts(no2_cal, seasonal.periods=c(7, 365.2524))
+str_no2_res <- AutoSTR(deTot_msts)
+
+str_no2_out <- xts::xts(stR::seasadj(str_no2_res), zoo::index(na.omit(daily_data$no2)))
+
+# TBATS
+deTot_msts <- msts(no2_cal, seasonal.periods=c(7, 365.2524))
+tbats_no2_res <- tbats(deTot_msts)
+
+tbats_no2_out <- xts::xts(as.numeric(seasadj(tbats_no2_res)), zoo::index(na.omit(daily_data$no2)))
+
+```
+
+The European NO2 immissions have strong weekly and annual seasonal patterns, as can be seen in below. While both DSA and STR yield similarly seasonally adjusted series - both visibly and based on the seasonality tests below - TBATS only barely changes the original series and thus remains clearly seasonal.
+
+
+```{r, fig.width=7.5, fig.height=7.5}
+g1 <- xtsplot(merge(na.omit(daily_data$no2), tbats_no2_out, str_no2_out, dsa_no2_out)["2015/"], 
+        names=c("Original", "TBATS", "STR", "DSA"), color = c("darkgrey", "blue", "orange", "red"),
+        main="Comparison of seasonal adjustment result", 
+        submain="From 2015",
+        linesize=0.75) + 
+  ggplot2::theme(legend.position="None")
+
+g2 <- xtsplot(merge(na.omit(daily_data$no2), tbats_no2_out, str_no2_out, dsa_no2_out)["2019/"], 
+        names=c("Original", "TBATS", "STR", "DSA"), color = c("darkgrey", "blue", "orange", "red"),
+        main="Comparison of seasonal adjustment result", 
+        submain="From 2019",
+        linesize=0.75) + 
+  ggplot2::theme(legend.position="None", plot.title = ggplot2::element_blank())
+
+g3 <- xtsplot(merge(na.omit(daily_data$no2), tbats_no2_out, str_no2_out, dsa_no2_out)["2020-01-01/2020-03-31"], 
+        names=c("Original", "TBATS", "STR", "DSA"), color = c("darkgrey", "blue", "orange", "red"),
+        main="Comparison of seasonal adjustment result", 
+        submain="2020-01-01 to 2020-03-31",
+        linesize=0.75) + 
+  ggplot2::theme(plot.title = ggplot2::element_blank())
+
+gridExtra::grid.arrange(g1, g2, g3, layout_matrix=matrix(c(1,1,2,2,3,3,3), ncol=1))
+```
+
+```{r, fig.width=7.5, fig.height=4.5}
+knitr::kable(all_seas(na.omit(daily_data$no2), tbats_no2_out, str_no2_out, dsa_no2_out))
+```
+
+
+
+### Example: Electricity consumption
+
+The realised German electricity consumption is compiled by the Bundesnetzagentur [German Federal Network Agency] and is available starting from January, 2015. It has both notable intra-weekly patterns, especially a difference between working days and weekend, and intra-yearly patterns that changes with the seasons. Though for most time, the weekday effects are relatively stable, it can change easily in response to economic changes. Therefore, relatively short seasonal filters are used for the day-of-the-week and day-of-the-year effect, while the day-of-the-month is omitted due to missing indications for this effect in the spectrum of the series. Here, we use $\gamma_{S^{(7)}}:=\gamma_{S^{(365)}}:=13$.
+
+Given that fewer people work on holidays, it is not surprising that there is a lower electricity consumption during holidays. Yet, if a holiday coincides with the weekend, the decrease is lower compared to holidays falling on working days. This can be modelled explicitly by including weekday specific regressors for each holiday. As we only have less than six years of observations, it can be sensible to combine some of the holidays. Accordingly, all holidays with a fixed date, except those related to Christmas and New Years, are modelled together, weighted by the share of regions for which the day is a public holiday. These are Epiphany (Jan 6), Labour day (May 1), Assumption (Aug 15), German Unity (Oct 3), Reformation Day (Oct 31), and All Saints' Day (Nov 1). In addition to the interaction effects, dummy variables for all moving holidays are added, usually including the day leading up to the holiday and the day after. In the RegARIMA model, 26x2 seasonal trigonometric terms are added to model the seasonality. 
+
+```{r, fig.width=7.5, fig.height=4.5, eval=FALSE}
+# Load data
+elec <- daily_data$elec_consumption
+elec <- elec[!is.na(elec)]
+
+# Regressors 
+reference_series <- elec
+restrict <- seq.Date(from=stats::start(reference_series), 
+                     to=stats::end(reference_series), by="days")
+restrict_forecast <- seq.Date(from=stats::end(reference_series)+1,
+                              length.out=365, by="days")
+
+ReformationDayPost2017 <- del_names(holidays$ReformationDay)
+ReformationDayPost2017["/2017"] <- 0
+ReformationDayWedPost2017 <- del_names(holidays$Oct31Wed)
+ReformationDayWedPost2017["/2017"] <- 0
+ReformationDayThuPost2017 <- del_names(holidays$Oct31Thu)
+ReformationDayThuPost2017["/2017"] <- 0
+ReformationDayFriPost2017 <- del_names(holidays$Oct31Fri)
+ReformationDayFriPost2017["/2017"] <- 0
+ReformationDaySatPost2017 <- del_names(holidays$Oct31Sat)
+ReformationDaySatPost2017["/2017"] <- 0
+ReformationDayTuePost2017 <- del_names(holidays$Oct31Tue)
+ReformationDayTuePost2017["/2017"] <- 0
+ReformationDayMonPost2017 <- del_names(holidays$Oct31Mon)
+ReformationDayMonPost2017["/2017"] <- 0
+ReformationDaySunPost2017 <- del_names(holidays$Oct31Sun)
+ReformationDaySunPost2017["/2017"] <- 0
+
+NationalHolWeekday=del_names(holidays$May1Mon+holidays$Oct3Mon+0.6*holidays$Jan6Mon+
+                               0.1*holidays$Aug15Mon+0.2*ReformationDayMonPost2017+
+                               0.6*holidays$Nov1Mon+
+                               holidays$May1Tue+holidays$Oct3Tue+0.6*holidays$Jan6Tue+
+                               0.1*holidays$Aug15Tue+0.2*ReformationDayTuePost2017+
+                               0.6*holidays$Nov1Tue+
+                               holidays$May1Wed+holidays$Oct3Wed+0.6*holidays$Jan6Wed+
+                               0.1*holidays$Aug15Wed+0.2*ReformationDayWedPost2017+
+                               0.6*holidays$Nov1Wed+
+                               holidays$May1Thu+holidays$Oct3Thu+ 0.6*holidays$Jan6Thu+
+                               0.1*holidays$Aug15Thu+0.2*ReformationDayThuPost2017+
+                               0.6*holidays$Nov1Thu+
+                               holidays$May1Fri+holidays$Oct3Fri+0.6*holidays$Jan6Fri+
+                               0.1*holidays$Aug15Fri+0.2*ReformationDayFriPost2017+
+                               0.6*holidays$Nov1Fri)
+
+NationalHolSat=del_names(holidays$May1Sat+holidays$Oct3Sat+0.6*holidays$Jan6Sat+
+                           0.1*holidays$Aug15Sat+0.2*ReformationDaySatPost2017+
+                           0.6*holidays$Nov1Sat)
+
+NationalHolSun=del_names(holidays$May1Sun+holidays$Oct3Sun+0.6*holidays$Jan6Sun+
+                           0.1*holidays$Aug15Sun+0.2*ReformationDaySunPost2017+
+                           0.6*holidays$Nov1Sun)
+
+XmasPeriodWeekday=del_names(holidays$XmasPeriodMon+holidays$XmasPeriodTue+
+                              holidays$XmasPeriodWed+holidays$XmasPeriodThu+
+                              holidays$XmasPeriodFri)
+
+
+AllHol <- merge(holidays[, c("CarnivalMonday", "HolyThursday", "GoodFriday", 
+                             "HolySaturday", "EasterSunday", "EasterMonday", 
+                             "EasterMondayAft1Day", "AscensionBef1Day", 
+                             "Ascension", "AscensionAft1Day", "CorpusChristiBef1Day", 
+                             "CorpusChristi", "CorpusChristiAft1Day")], 
+                NationalHolWeekday, NationalHolSat, XmasPeriodWeekday,
+                holidays[, c("ReformationDay2017",  "May1Bridge", "PentecostBef1Day", 
+                             "PentecostMonday", "PentecostAft1Day",  "Oct3Bridge",  
+                             "Nov1Bridge", "PreXmasSat3d", "Dec24Sat", "Dec25Sat", 
+                             "Dec26Sat", "PostXmasSat10d", "PreXmasSun3d", "Dec24Sun", 
+                             "Dec25Sun", "Dec26Sun", "PostXmasSun10d")]) 
+
+AllHolUse <- multi_xts2ts(AllHol[restrict])
+AllHolForecast <- multi_xts2ts(AllHol[restrict_forecast], short=TRUE)
+AllHolForecast <- AllHolForecast[,colSums(AllHolUse)!=0]
+AllHolUse <- AllHolUse[,colSums(AllHolUse)!=0]
+
+# Adjustment with DSA
+
+elec_sa <- dsa(elec, Log=FALSE, 
+               s.window1 = 13, s.window2 = NULL, s.window3 = 13, 
+               fourier_number = 26, 
+               regressor=AllHolUse, forecast_regressor = AllHolForecast, 
+               robust3=FALSE, feb29="sfac", 
+               progress_bar = FALSE)
+
+dsa_elec_out <- get_sa(elec_sa)
+```
+
+```{r}
+# Workaround to reduce the compilation time for CRAN. Results obtained from dsa() using the specification above.
+elec_sa <- dsa_examples[[2]]
+dsa_elec_out <- get_sa(elec_sa)
+```
+
+
+
+For the German electricity consumption, the series adjusted by DSA does not show any signs of residual seasonality. 
+
+
+
+```{r, fig.width=7.5, fig.height=7.5}
+g1 <- xtsplot(merge(na.omit(daily_data$elec_consumption), dsa_elec_out)["2015/"]/1e6, 
+        names=c("Original", "DSA"), color = c("darkgrey",  "red"),
+        main="Seasonal adjustment result", 
+        submain="From 2015",
+        linesize=0.75) + 
+  ggplot2::theme(legend.position="None")
+
+g2 <- xtsplot(merge(na.omit(daily_data$elec_consumption), dsa_elec_out)["2019/"]/1e6, 
+        names=c("Original", "DSA"), color = c("darkgrey", "red"),
+        main="Seasonal adjustment result", 
+        submain="From 2019",
+        linesize=0.75) + 
+  ggplot2::theme(legend.position="None", plot.title = ggplot2::element_blank())
+
+g3 <- xtsplot(merge(na.omit(daily_data$elec_consumption), dsa_elec_out)["2020-01-01/2020-03-31"]/1e6, 
+        names=c("Original", "DSA"), color = c("darkgrey", "red"),
+        main="Seasonal adjustment result", 
+        submain="2020-01-01 to 2020-03-31",
+        linesize=0.75) + 
+  ggplot2::theme(plot.title = ggplot2::element_blank())
+
+gridExtra::grid.arrange(g1, g2, g3, layout_matrix=matrix(c(1,1,2,2,3,3,3), ncol=1))
+
+```
+
+```{r, fig.width=7.5, fig.height=4.5}
+knitr::kable(all_seas(na.omit(daily_data$elec_consumption), dsa_elec_out))
+```
+
+
+
+
+
+
+
+
+## References
+Ollech, Daniel (2018). Seasonal adjustment of daily time series. Bundesbank Discussion Paper 41/2018.
+
+Ollech, Daniel (2021). Seasonal Adjustment of Daily Time Series. Journal of Time Series Econometrics (forthcoming).
+

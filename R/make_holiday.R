@@ -5,10 +5,10 @@
 #' @param shift shifting point in time for dummy
 #' @details With shift the user can specify for how many days before (negative value) or after (positive value) the holiday a dummy will be created.
 #' @author Daniel Ollech
-#' @examples Holiday(dates=timeDate::Easter(2000:2030), shift=-1)
+#' @examples make_holiday(dates=timeDate::Easter(2000:2030), shift=-1)
 #' @export
 
-Holiday <- function(dates=timeDate::Easter(2000:2030), shift=0) {
+make_holiday <- function(dates=timeDate::Easter(2000:2030), shift=0) {
   Holiday_dates <- timeDate::as.Date.timeDate(dates)+shift
   
   vec <- rep(1, times=length(Holiday_dates))

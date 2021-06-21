@@ -17,9 +17,10 @@
 #' @details day-of-the-year seasonal component.
 #' @author Daniel Ollech
 #' @examples time_series <- daily_sim(n=4, year_effect=3)
-#' xtsplot(time_series[,1], font="sans") # Plot of the time series
-#' xtsplot(time_series[,3:5], font="sans") # Plot of the seasonal factors
+#' xtsplot(time_series[,1]) # Plot of the time series
+#' xtsplot(time_series[,3:5]) # Plot of the seasonal factors
 #' @export
+
 daily_sim <- function(n=8, week_effect=1, month_effect=1, year_effect=1, model=c(3,1,1), ar=c(-0.2, 0.5,0.1), ma=-0.4, moving=T, week_cycles=2, month_cycles=3, year_cycles=8) {
 
   

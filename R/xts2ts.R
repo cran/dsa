@@ -21,20 +21,8 @@ xts2ts <- function(series, freq=NULL) {
   
   time <- sum(as.numeric(format(zoo::index(series), "%Y")==format(xts::first(zoo::index(series)), "%Y")))
   
-  .is.leapyear <- function(x) {
-    year <- as.numeric(x)
-    if((year %% 4) == 0) {
-      if((year %% 100) == 0) {
-        if((year %% 400) == 0) {
-          out <- TRUE
-        } else {out <- FALSE}
-      } else {out <- TRUE }
-    } else {out <- FALSE}
-    
-    return(out)
-  }
-  
-  if (.is.leapyear(format(xts::first(zoo::index(series)), "%Y"))) {time <- time-1}
+  if (.is.leapyear(format(xts::first(zoo::index(series)), "%Y")) && 
+      as.Date(xts::first(zoo::index(series))) < as.Date(paste0(format(xts::first(zoo::index(series)), "%Y"), "-02-29"))) {time <- time-1}
   
   newstart <- c(as.numeric(format(xts::first(zoo::index(series)), "%Y")), freq-time+1)
   

@@ -9,10 +9,10 @@
 
 ts2xts <- function(x_ts) {
 
-day_number <- ifelse(trunc(zoo::index(x_ts))%%4==0 & ((zoo::index(x_ts)-trunc(zoo::index(x_ts)))*365)+1>59.5, ((zoo::index(x_ts)-trunc(zoo::index(x_ts)))*365)+2, ((zoo::index(x_ts)-trunc(zoo::index(x_ts)))*365)+1) 
+day_number <- ifelse(sapply(trunc(zoo::index(x_ts)), .is.leapyear) & ((zoo::index(x_ts)-trunc(zoo::index(x_ts)))*365)+1>59.5, ((zoo::index(x_ts)-trunc(zoo::index(x_ts)))*365)+2, ((zoo::index(x_ts)-trunc(zoo::index(x_ts)))*365)+1) 
 
 cal <- as.Date(paste(as.character(trunc(zoo::index(x_ts))), as.character(round(day_number, digits=0))), format="%Y %j")
-# cal <- na.approx(as.Date(cal))
+
 xts_out <- xts::xts(x_ts, order.by=cal) 
 xts_out
 }

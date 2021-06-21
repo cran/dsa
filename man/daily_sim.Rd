@@ -53,8 +53,8 @@ day-of-the-year seasonal component.
 }
 \examples{
 time_series <- daily_sim(n=4, year_effect=3)
-xtsplot(time_series[,1], font="sans") # Plot of the time series
-xtsplot(time_series[,3:5], font="sans") # Plot of the seasonal factors
+xtsplot(time_series[,1]) # Plot of the time series
+xtsplot(time_series[,3:5]) # Plot of the seasonal factors
 }
 \author{
 Daniel Ollech
